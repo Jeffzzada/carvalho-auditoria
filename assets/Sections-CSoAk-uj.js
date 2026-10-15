@@ -14,8 +14,8 @@ var d = c(`arrow-right`, [[`path`, {
     d: `m6 9 6 6 6-6`,
     key: `qrunsl`
 }]])
-  , m = `/assets/segment-private-Bpszswip.jpg`
-  , h = `/assets/segment-public-BxtFRIyT.jpg`
+  , m = `/assets/empresas privadas.jpg`
+  , h = `/assets/segmento publico.jpg`
   , g = i();
 function _({eyebrow: e, title: t, text: n, as: r, center: i}) {
     return (0,
