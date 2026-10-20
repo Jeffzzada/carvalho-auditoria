@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "name": "tanstack_start_ts",
   "private": true,
   "sideEffects": false,
@@ -52,8 +51,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5",
-    "vitest": "^4.1.10"
-=======
+    "vitest": "^4.1.10",
   "name": "carvalho-auditoria",
   "private": true,
   "version": "1.0.0",
@@ -73,6 +71,6 @@
   "devDependencies": {},
   "allowScripts": {
     "esbuild@0.28.2": true
->>>>>>> 9bbb086d45b5a32eba04c20200a1c4ec866baac5
   }
+}
 }
