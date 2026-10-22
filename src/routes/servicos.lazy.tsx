@@ -1,5 +1,5 @@
 import { createLazyRoute } from "@tanstack/react-router";
-import { ServicesSection, DifferentialsSection, CtaBand } from "@/components/site/Sections";
+import { ServicesDetails, DifferentialsSection, CtaBand } from "@/components/site/Sections";
 
 export const Route = createLazyRoute("/servicos")({
   component: Page,
@@ -8,7 +8,7 @@ export const Route = createLazyRoute("/servicos")({
 function Page() {
   return (
     <>
-      <ServicesSection as="h1" />
+      <ServicesDetails />
       <DifferentialsSection />
       <CtaBand />
     </>

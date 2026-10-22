@@ -17,13 +17,26 @@ type Props = {
   full?: boolean | undefined;
 };
 
-export function WhatsAppButton({ message, label = "Fale com nossa equipe", variant = "primary", className, full }: Props) {
+export function WhatsAppButton({
+  message,
+  label = "Fale com nossa equipe",
+  variant = "primary",
+  className,
+  full,
+}: Props) {
   return (
     <a
       href={whatsappUrl(message)}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn("btn", variant === "primary" && "btn-primary", variant === "outline" && "btn-outline", variant === "light" && "btn-light", full && "w-full", className)}
+      className={cn(
+        "btn",
+        variant === "primary" && "btn-primary",
+        variant === "outline" && "btn-outline",
+        variant === "light" && "btn-light",
+        full && "w-full",
+        className,
+      )}
     >
       <WhatsAppIcon className="h-5 w-5 shrink-0" />
       <span>{label}</span>

@@ -10,18 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AtendimentoRouteImport } from './routes/atendimento'
 import { Route as ComoFuncionaRouteImport } from './routes/como-funciona'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as PerguntasFrequentesRouteImport } from './routes/perguntas-frequentes'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as SegmentosRouteImport } from './routes/segmentos'
 import { Route as ServicosRouteImport } from './routes/servicos'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as ApiAtendimentoRouteImport } from './routes/api.atendimento'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
+const AtendimentoRoute = AtendimentoRouteImport.update({
+  id: '/atendimento',
+  path: '/atendimento',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/atendimento.lazy').then((d) => d.Route))
 const ComoFuncionaRoute = ComoFuncionaRouteImport.update({
   id: '/como-funciona',
   path: '/como-funciona',
@@ -39,6 +47,11 @@ const PerguntasFrequentesRoute = PerguntasFrequentesRouteImport.update({
 } as any).lazy(() =>
   import('./routes/perguntas-frequentes.lazy').then((d) => d.Route),
 )
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/privacidade.lazy').then((d) => d.Route))
 const SegmentosRoute = SegmentosRouteImport.update({
   id: '/segmentos',
   path: '/segmentos',
@@ -54,73 +67,99 @@ const SobreRoute = SobreRouteImport.update({
   path: '/sobre',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/sobre.lazy').then((d) => d.Route))
+const ApiAtendimentoRoute = ApiAtendimentoRouteImport.update({
+  id: '/api/atendimento',
+  path: '/api/atendimento',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/atendimento': typeof AtendimentoRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/contato': typeof ContatoRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/segmentos': typeof SegmentosRoute
   '/servicos': typeof ServicosRoute
   '/sobre': typeof SobreRoute
+  '/api/atendimento': typeof ApiAtendimentoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/atendimento': typeof AtendimentoRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/contato': typeof ContatoRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/segmentos': typeof SegmentosRoute
   '/servicos': typeof ServicosRoute
   '/sobre': typeof SobreRoute
+  '/api/atendimento': typeof ApiAtendimentoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/atendimento': typeof AtendimentoRoute
   '/como-funciona': typeof ComoFuncionaRoute
   '/contato': typeof ContatoRoute
   '/perguntas-frequentes': typeof PerguntasFrequentesRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/segmentos': typeof SegmentosRoute
   '/servicos': typeof ServicosRoute
   '/sobre': typeof SobreRoute
+  '/api/atendimento': typeof ApiAtendimentoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/atendimento'
     | '/como-funciona'
     | '/contato'
     | '/perguntas-frequentes'
+    | '/privacidade'
     | '/segmentos'
     | '/servicos'
     | '/sobre'
+    | '/api/atendimento'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/atendimento'
     | '/como-funciona'
     | '/contato'
     | '/perguntas-frequentes'
+    | '/privacidade'
     | '/segmentos'
     | '/servicos'
     | '/sobre'
+    | '/api/atendimento'
   id:
     | '__root__'
     | '/'
+    | '/atendimento'
     | '/como-funciona'
     | '/contato'
     | '/perguntas-frequentes'
+    | '/privacidade'
     | '/segmentos'
     | '/servicos'
     | '/sobre'
+    | '/api/atendimento'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AtendimentoRoute: typeof AtendimentoRoute
   ComoFuncionaRoute: typeof ComoFuncionaRoute
   ContatoRoute: typeof ContatoRoute
   PerguntasFrequentesRoute: typeof PerguntasFrequentesRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   SegmentosRoute: typeof SegmentosRoute
   ServicosRoute: typeof ServicosRoute
   SobreRoute: typeof SobreRoute
+  ApiAtendimentoRoute: typeof ApiAtendimentoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -130,6 +169,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/atendimento': {
+      id: '/atendimento'
+      path: '/atendimento'
+      fullPath: '/atendimento'
+      preLoaderRoute: typeof AtendimentoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/como-funciona': {
@@ -153,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerguntasFrequentesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/segmentos': {
       id: '/segmentos'
       path: '/segmentos'
@@ -174,17 +227,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SobreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/atendimento': {
+      id: '/api/atendimento'
+      path: '/api/atendimento'
+      fullPath: '/api/atendimento'
+      preLoaderRoute: typeof ApiAtendimentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AtendimentoRoute: AtendimentoRoute,
   ComoFuncionaRoute: ComoFuncionaRoute,
   ContatoRoute: ContatoRoute,
   PerguntasFrequentesRoute: PerguntasFrequentesRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   SegmentosRoute: SegmentosRoute,
   ServicosRoute: ServicosRoute,
   SobreRoute: SobreRoute,
+  ApiAtendimentoRoute: ApiAtendimentoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

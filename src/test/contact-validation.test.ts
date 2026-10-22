@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { hasContactErrors, validateContactField, validateContactForm } from "@/lib/contact-validation";
+import {
+  hasContactErrors,
+  validateContactField,
+  validateContactForm,
+} from "@/lib/contact-validation";
 
 describe("Validação do formulário de contato", () => {
   it("informa o mínimo de caracteres do nome", () => {
@@ -8,7 +12,9 @@ describe("Validação do formulário de contato", () => {
   });
 
   it("informa o mínimo de caracteres da organização", () => {
-    expect(validateContactField("organizacao", "A")).toBe("Informe a organização (min de caracteres: 2)");
+    expect(validateContactField("organizacao", "A")).toBe(
+      "Informe a organização (min de caracteres: 2)",
+    );
   });
 
   it("informa o mínimo de caracteres do assunto", () => {
@@ -16,7 +22,9 @@ describe("Validação do formulário de contato", () => {
   });
 
   it("informa o mínimo de caracteres da mensagem", () => {
-    expect(validateContactField("mensagem", "curta")).toBe("Descreva brevemente sua necessidade (min de caracteres: 10)");
+    expect(validateContactField("mensagem", "curta")).toBe(
+      "Descreva brevemente sua necessidade (min de caracteres: 10)",
+    );
   });
 
   it("aceita valores que atingem o mínimo", () => {
@@ -33,7 +41,7 @@ describe("Validação do formulário de contato", () => {
       nome: "Ana",
       organizacao: "Empresa LTDA",
       assunto: "Auditoria",
-      mensagem: "Preciso de uma auditoria patrimonial.",
+      mensagem: "Preciso de uma avaliação de controles.",
     });
     expect(hasContactErrors(valid)).toBe(false);
   });

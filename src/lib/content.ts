@@ -1,74 +1,163 @@
-import { ClipboardList, Scale, Database, SearchCheck, ShieldCheck, FileText, BadgeCheck, FileSearch, Lock, Handshake, TrendingUp } from "lucide-react";
+import {
+  Monitor,
+  Landmark,
+  Receipt,
+  Leaf,
+  ShieldCheck,
+  Scale,
+  FileSearch,
+  Lock,
+  TrendingUp,
+  Gavel,
+  UserCheck,
+  type LucideIcon,
+} from "lucide-react";
 
-export const services = [
+export type ServiceId = "ti" | "contabil" | "fiscal" | "ambiental";
+
+export type Service = {
+  id: ServiceId;
+  icon: LucideIcon;
+  title: string;
+  /** Nome curto, usado em resumos e mensagens. */
+  shortTitle: string;
+  objective: string;
+  fronts: string[];
+  benefits: string[];
+  /** Perfis atendidos (opcional). */
+  profiles?: string[];
+  /** Aviso/limite de escopo exibido junto do serviço. */
+  notice?: string;
+  ctaLabel: string;
+};
+
+export const services: Service[] = [
   {
-    icon: ClipboardList,
-    title: "Levantamento físico patrimonial",
-    text: "Verificação física dos bens patrimoniais, com identificação, localização e confronto com as informações disponibilizadas pela organização.",
-    message:
-      "Olá! Acessei o site da Carvalho Soluções em Auditoria e gostaria de informações sobre o serviço de levantamento físico patrimonial.",
+    id: "ti",
+    icon: Monitor,
+    title: "Auditoria de Sistemas e Tecnologia da Informação",
+    shortTitle: "Sistemas e TI",
+    objective:
+      "Ajudar a identificar fragilidades, avaliar riscos e aprimorar os controles tecnológicos da organização, conforme o escopo contratado.",
+    fronts: [
+      "Controles internos de TI",
+      "Análise de riscos tecnológicos",
+      "Controles de acesso e segurança da informação",
+      "Proteção e tratamento de dados pessoais (processos e controles relacionados à LGPD)",
+      "Governança e gestão de riscos de TI",
+      "Continuidade e segurança operacional",
+    ],
+    benefits: [
+      "Maior visibilidade sobre riscos e fragilidades tecnológicas",
+      "Apoio ao aprimoramento dos controles de acesso e de segurança da informação",
+      "Subsídios para a gestão de riscos e para a tomada de decisão",
+    ],
+    notice:
+      "A avaliação não constitui certificação de conformidade com a LGPD nem garante segurança absoluta dos sistemas e dos dados.",
+    ctaLabel: "Solicite uma avaliação de TI",
   },
   {
-    icon: Scale,
-    title: "Conciliação físico-contábil",
-    text: "Comparação entre os bens identificados fisicamente e os respectivos registros contábeis e patrimoniais, visando identificar divergências e inconsistências.",
-    message:
-      "Olá! Gostaria de conhecer melhor o serviço de conciliação físico-contábil oferecido pela Carvalho Soluções em Auditoria.",
+    id: "contabil",
+    icon: Landmark,
+    title: "Auditoria Financeira e Contábil",
+    shortTitle: "Financeira e Contábil",
+    objective:
+      "Apoiar empresas privadas e organizações públicas na avaliação de registros, procedimentos e controles financeiros e contábeis, conforme o escopo contratado.",
+    fronts: [
+      "Análise de registros e documentos contábeis",
+      "Avaliação de demonstrações contábeis",
+      "Revisão de procedimentos financeiros",
+      "Controles internos",
+      "Inconsistências e riscos financeiros",
+      "Conciliações e documentação",
+      "Confiabilidade das informações de gestão",
+    ],
+    benefits: [
+      "Mais organização das informações financeiras e contábeis",
+      "Identificação de fragilidades nos registros e nos procedimentos",
+      "Controles internos fortalecidos",
+      "Apoio à tomada de decisão",
+    ],
+    notice:
+      "Trabalhos de consultoria, revisão e procedimentos acordados são diferentes de auditoria independente de demonstrações contábeis. Não anunciamos asseguração independente nem emissão de opinião de auditoria sem o atendimento dos requisitos profissionais e legais aplicáveis.",
+    ctaLabel: "Solicite um atendimento contábil e financeiro",
   },
   {
-    icon: Database,
-    title: "Análise cadastral do ativo imobilizado",
-    text: "Verificação dos cadastros patrimoniais e das informações disponíveis para apoiar a consistência e a organização da base de bens.",
-    message:
-      "Olá! Acessei o site da Carvalho Soluções em Auditoria e gostaria de informações sobre o serviço de análise cadastral do ativo imobilizado.",
+    id: "fiscal",
+    icon: Receipt,
+    title: "Auditoria Fiscal e Tributária",
+    shortTitle: "Fiscal e Tributária",
+    objective:
+      "Avaliar apurações, documentos e obrigações fiscais para identificar inconsistências e riscos tributários, respeitando as particularidades de cada regime.",
+    fronts: [
+      "Revisão da apuração de tributos",
+      "Documentos e registros fiscais",
+      "Obrigações acessórias",
+      "Inconsistências e riscos tributários",
+      "Controles internos fiscais",
+      "Divergências entre documentos, escriturações e declarações",
+      "Tributos federais, estaduais e municipais",
+      "Orientação técnica de melhoria e regularização, quando aplicável",
+    ],
+    benefits: [
+      "Mais organização dos documentos e dos registros fiscais",
+      "Identificação de inconsistências e de riscos tributários",
+      "Apoio ao aprimoramento dos controles internos fiscais",
+    ],
+    profiles: ["MEI", "Simples Nacional", "Lucro Presumido", "Lucro Real"],
+    notice:
+      "A avaliação não garante redução de tributos nem recuperação de créditos. Os resultados dependem da documentação analisada e do escopo contratado.",
+    ctaLabel: "Solicite uma avaliação fiscal e tributária",
   },
   {
-    icon: SearchCheck,
-    title: "Identificação de divergências patrimoniais",
-    text: "Levantamento de diferenças entre os registros existentes e as informações verificadas durante os procedimentos contratados.",
-    message:
-      "Olá! Acessei o site da Carvalho Soluções em Auditoria e gostaria de informações sobre o serviço de identificação de divergências patrimoniais.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Apoio ao controle patrimonial",
-    text: "Contribuição para o aprimoramento dos processos de controle, identificação, acompanhamento e organização dos bens.",
-    message:
-      "Olá! Acessei o site da Carvalho Soluções em Auditoria e gostaria de informações sobre o apoio ao controle patrimonial.",
-  },
-  {
-    icon: FileText,
-    title: "Relatórios e apresentação de resultados",
-    text: "Organização dos resultados dos procedimentos executados, com apresentação dos apontamentos identificados e das informações pertinentes ao escopo contratado.",
-    message:
-      "Olá! Acessei o site da Carvalho Soluções em Auditoria e gostaria de informações sobre relatórios e apresentação de resultados.",
+    id: "ambiental",
+    icon: Leaf,
+    title: "Auditoria Ambiental",
+    shortTitle: "Ambiental",
+    objective:
+      "Avaliar controles, procedimentos e práticas de gestão ambiental, apoiando a gestão responsável, a prevenção de riscos e a melhoria contínua.",
+    fronts: [
+      "Controles e procedimentos ambientais",
+      "Conformidade ambiental",
+      "Riscos e fragilidades",
+      "Práticas de gestão ambiental",
+      "Monitoramento de indicadores",
+      "Controles e informações de sustentabilidade",
+      "Oportunidades de melhoria",
+    ],
+    benefits: [
+      "Gestão responsável dos aspectos ambientais",
+      "Prevenção de riscos por meio da identificação de fragilidades",
+      "Apoio à melhoria contínua dos controles e dos indicadores",
+    ],
+    notice: "A avaliação não constitui licenciamento nem atestado de conformidade ambiental.",
+    ctaLabel: "Solicite uma avaliação ambiental",
   },
 ];
 
-export const values = [
-  "Precisão técnica",
-  "Transparência",
-  "Organização",
-  "Confidencialidade",
-  "Compromisso com a qualidade",
-  "Atendimento profissional",
-];
+export function getService(id: string): Service | undefined {
+  return services.find((s) => s.id === id);
+}
 
 export const differentials = [
-  "Análise estruturada das informações patrimoniais.",
+  "Análise estruturada das informações e dos processos.",
   "Procedimentos alinhados ao escopo contratado.",
   "Comunicação clara durante o atendimento.",
   "Organização dos apontamentos identificados.",
   "Atenção à confidencialidade das informações.",
-  "Atendimento direcionado às necessidades da organização.",
+  "Atendimento direcionado às necessidades de cada organização.",
 ];
 
 export const steps = [
-  { n: "01", title: "Primeiro contato", text: "O cliente apresenta sua necessidade inicial pelo WhatsApp." },
+  {
+    n: "01",
+    title: "Primeiro contato",
+    text: "A organização apresenta sua necessidade inicial pelo assistente de Atendimento ou pelo WhatsApp.",
+  },
   {
     n: "02",
     title: "Entendimento da demanda",
-    text: "A equipe busca compreender as características do patrimônio, as informações disponíveis e os objetivos pretendidos.",
+    text: "A equipe busca compreender as características da organização, as informações disponíveis e os objetivos pretendidos.",
   },
   {
     n: "03",
@@ -84,53 +173,100 @@ export const steps = [
 
 export const faqs = [
   {
-    q: "O que é auditoria de ativo imobilizado?",
-    a: "É um conjunto de procedimentos voltados à verificação e análise de informações relacionadas aos bens de uma organização, conforme o objetivo e o escopo do trabalho contratado.",
+    q: "Quais serviços a Carvalho Soluções em Auditoria oferece?",
+    a: "Auditoria de Sistemas e Tecnologia da Informação, Auditoria Financeira e Contábil, Auditoria Fiscal e Tributária e Auditoria Ambiental, sempre conforme o escopo contratado.",
   },
   {
-    q: "Qual a diferença entre levantamento físico e conciliação físico-contábil?",
-    a: "O levantamento físico envolve a identificação e verificação dos bens. A conciliação físico-contábil compara os resultados dessa verificação com os registros contábeis e patrimoniais disponíveis.",
+    q: "Os serviços incluem auditoria independente de demonstrações contábeis?",
+    a: "Trabalhos de consultoria, revisão e procedimentos acordados são diferentes de auditoria independente de demonstrações contábeis. Não anunciamos asseguração independente nem emissão de opinião de auditoria sem o atendimento dos requisitos profissionais e legais aplicáveis.",
   },
   {
     q: "A empresa atende organizações públicas e privadas?",
-    a: "O site está direcionado aos dois segmentos. A possibilidade de atendimento de cada demanda deverá ser confirmada conforme os requisitos e as condições aplicáveis à contratação.",
+    a: "O site está direcionado aos dois segmentos. A possibilidade de atendimento de cada demanda é avaliada conforme os requisitos e as condições aplicáveis à contratação.",
+  },
+  {
+    q: "Preciso saber meu porte, faturamento ou regime tributário para solicitar atendimento?",
+    a: "Não. Essas informações servem apenas para organizar o atendimento e podem ser deixadas em branco ou respondidas como “não sei informar”. Elas não impedem a solicitação.",
   },
   {
     q: "Como solicitar uma proposta?",
-    a: "Entre em contato pelo WhatsApp e apresente brevemente a necessidade da sua organização. A equipe poderá orientar sobre as informações necessárias para avaliar a demanda.",
+    a: "Acesse a aba Atendimento, responda às perguntas rápidas e envie sua solicitação. Se preferir, fale diretamente pelo WhatsApp. A equipe poderá orientar sobre as informações necessárias para avaliar a demanda.",
   },
   {
-    q: "Quanto custa uma auditoria de ativo imobilizado?",
-    a: "O valor depende de fatores como quantidade e distribuição dos bens, complexidade da operação, informações disponíveis, procedimentos necessários e prazo solicitado. Entre em contato para discutir as características da sua demanda.",
+    q: "Quanto custa um serviço de auditoria?",
+    a: "O valor depende de fatores como o serviço escolhido, a complexidade da operação, as informações disponíveis, os procedimentos necessários e o prazo solicitado. Entre em contato para discutir as características da sua demanda.",
+  },
+  {
+    q: "Como as informações enviadas são tratadas?",
+    a: "As informações são usadas apenas para organizar o atendimento e permitir o retorno da equipe. Consulte o Aviso de Privacidade para mais detalhes.",
   },
 ];
 
+/** Missão e Visão: textos editáveis. */
 export const mission = {
   title: "Missão",
-  text: "Contribuir para a confiabilidade das informações patrimoniais das organizações por meio de serviços especializados em auditoria de ativo imobilizado, promovendo maior controle, transparência e segurança na gestão dos bens.",
+  text: "Oferecer soluções de auditoria e avaliação de controles que contribuam para a transparência, a segurança, a conformidade e a melhoria dos processos organizacionais.",
 };
 
 export const vision = {
   title: "Visão",
-  text: "Ser reconhecida pela qualidade técnica, confiabilidade e excelência na prestação de serviços de auditoria de ativo imobilizado, tornando-se referência para organizações públicas e privadas na gestão e no controle patrimonial.",
+  text: "Consolidar-se como uma empresa de referência em soluções de auditoria, reconhecida pela qualidade técnica, pela confiança e pela contribuição à gestão responsável das organizações.",
 };
 
+/** Valores: 7 cards com ícone. Edite título e texto aqui. */
 export const coreValues = [
-  { icon: ShieldCheck, title: "Ética e integridade", text: "Atuação responsável, transparente e comprometida com a verdade." },
-  { icon: Scale, title: "Rigor técnico", text: "Procedimentos criteriosos e fundamentados nas normas aplicáveis ao trabalho." },
-  { icon: BadgeCheck, title: "Confiabilidade", text: "Compromisso com a qualidade das informações e dos resultados apresentados." },
-  { icon: FileSearch, title: "Transparência", text: "Comunicação clara sobre procedimentos, limitações e conclusões." },
-  { icon: Lock, title: "Confidencialidade", text: "Proteção das informações e dos documentos dos clientes." },
-  { icon: Handshake, title: "Compromisso com o cliente", text: "Atendimento profissional, respeitando as necessidades de cada organização." },
-  { icon: TrendingUp, title: "Melhoria contínua", text: "Aperfeiçoamento de métodos, processos e conhecimentos técnicos." },
+  {
+    icon: ShieldCheck,
+    title: "Ética",
+    text: "Atuação responsável, transparente e comprometida com a verdade.",
+  },
+  {
+    icon: Gavel,
+    title: "Independência",
+    text: "Condução imparcial dos trabalhos, conforme o escopo contratado.",
+  },
+  {
+    icon: FileSearch,
+    title: "Transparência",
+    text: "Comunicação clara sobre procedimentos, limitações e conclusões.",
+  },
+  {
+    icon: UserCheck,
+    title: "Responsabilidade",
+    text: "Zelo pelas informações recebidas e pelos procedimentos executados.",
+  },
+  {
+    icon: Scale,
+    title: "Excelência técnica",
+    text: "Procedimentos criteriosos e fundamentados nas normas aplicáveis ao trabalho.",
+  },
+  {
+    icon: Lock,
+    title: "Confidencialidade",
+    text: "Proteção das informações e dos documentos dos clientes.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Compromisso com a melhoria contínua",
+    text: "Aperfeiçoamento de métodos, processos e conhecimentos técnicos.",
+  },
+];
+
+export const segments = [
+  {
+    title: "Empresas privadas",
+    text: "Serviços direcionados às necessidades de empresas de diferentes portes e regimes tributários, conforme as características de seus processos, registros e controles internos.",
+  },
+  {
+    title: "Organizações públicas",
+    text: "Serviços compatíveis com a natureza de órgãos e entidades da Administração Pública, respeitando as normas aplicáveis, o escopo contratado e os procedimentos pertinentes a cada instituição.",
+  },
 ];
 
 export const navLinks = [
   { to: "/", label: "Início" },
-  { to: "/sobre", label: "Sobre" },
+  { to: "/sobre", label: "Sobre nós" },
   { to: "/servicos", label: "Serviços" },
-  { to: "/como-funciona", label: "Como funciona" },
-  { to: "/segmentos", label: "Segmentos" },
-  { to: "/perguntas-frequentes", label: "FAQ" },
+  { to: "/atendimento", label: "Atendimento" },
   { to: "/contato", label: "Contato" },
 ] as const;

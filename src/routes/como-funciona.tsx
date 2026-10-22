@@ -5,6 +5,6 @@ export const Route = createFileRoute("/como-funciona")({
   head: () =>
     pageHead(
       "Como Funciona | Carvalho Soluções em Auditoria",
-      "Do primeiro contato à entrega dos resultados: entenda as etapas de atendimento em auditoria de ativo imobilizado.",
+      "Do primeiro contato à entrega dos resultados: entenda as etapas do atendimento da Carvalho Soluções em Auditoria.",
     ),
 });

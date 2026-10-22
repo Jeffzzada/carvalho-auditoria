@@ -1,12 +1,17 @@
 # Roadmap
 
-## Parte A — Página Sobre
-- [ ] Adicionar seções Missão, Visão e Valores à página Sobre existente (sem nova rota)
+## Reformulação do site (concluído no código)
+- [x] Menu: Início | Sobre nós | Serviços | Atendimento | Contato
+- [x] 4 serviços (TI, Financeira e Contábil, Fiscal e Tributária, Ambiental) no lugar do serviço anterior, cada um com CTA para o Atendimento pré-selecionado
+- [x] Sobre nós com Missão, Visão e 7 Valores (textos editáveis em `src/lib/content.ts`)
+- [x] Assistente de Atendimento (`/atendimento`) com envio real via `/api/atendimento`
+- [x] Aviso de Privacidade (`/privacidade`) e consentimento no envio
+- [x] WhatsApp centralizado em `src/config/site.ts`
+- [x] Validação "(min de caracteres: X)" no Contato e no Atendimento
+- [x] FAQ com abertura suave; menus sem backdrop-filter; rotas com lazy loading; imagens WebP
 
-## Parte B — Ajustes
-- [ ] Trocar WhatsApp para 55 71 98450-1050 em todo o site (links wa.me e textos "(71) 98450-1050")
-- [ ] Validação do formulário de contato: mensagem "(min de caracteres: X)" no blur e no envio, borda vermelha, aria-invalid/describedby, bloquear envio
-- [ ] FAQ com abertura suave (altura ~300ms ease-in-out + fade, seta girando, respeitar prefers-reduced-motion)
-- [ ] Desempenho: remover blur do cabeçalho, transições leves no menu mobile, memoização, code splitting por rota, imagens WebP, remover deps/código não usados, fontes com swap
-- [ ] Testes: número do WhatsApp e mensagens de validação
-- [ ] Verificar build e testar no navegador (menu, FAQ, formulário, Sobre)
+## Depende de configuração (ver `.env.example` e `supabase/migrations`)
+- [ ] Criar a tabela no Supabase (rodar a migration) e definir `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` no servidor
+- [ ] Definir `RESEND_API_KEY`, `NOTIFY_EMAIL_TO` e `NOTIFY_EMAIL_FROM` para o aviso por e-mail à equipe
+- [ ] Preencher em `src/config/site.ts`, quando confirmados: e-mail comercial, área de atendimento, horário, razão social e CNPJ
+- [ ] Revisão jurídica do Aviso de Privacidade

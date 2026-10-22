@@ -4,7 +4,7 @@ import { pageHead } from "@/lib/seo";
 export const Route = createFileRoute("/")({
   head: () =>
     pageHead(
-      "Carvalho Soluções em Auditoria | Auditoria de Ativo Imobilizado",
-      "Conheça os serviços da Carvalho Soluções em Auditoria relacionados à auditoria de ativo imobilizado, levantamento físico patrimonial e conciliação físico-contábil.",
+      "Carvalho Soluções em Auditoria | Auditoria e avaliação de controles",
+      "Soluções de auditoria em sistemas e TI, financeira e contábil, fiscal e tributária e ambiental, conforme o escopo contratado.",
     ),
 });

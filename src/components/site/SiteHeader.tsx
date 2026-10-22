@@ -1,4 +1,4 @@
-import logo from "@/assets/logo-carvalho.jpg.asset.json";
+import logo from "@/assets/logo-carvalho.webp";
 import { Link } from "@tanstack/react-router";
 import { memo, useCallback, useState } from "react";
 import { Menu, X } from "lucide-react";
@@ -8,7 +8,13 @@ import { WhatsAppButton } from "./WhatsAppButton";
 export const Logo = memo(function Logo({ light }: { light?: boolean | undefined }) {
   return (
     <span className={light ? "inline-block rounded-lg bg-background px-3 py-2" : "inline-block"}>
-      <img src={logo.url} alt="Carvalho Soluções em Auditoria" width={1410} height={450} className="h-10 w-auto sm:h-12" />
+      <img
+        src={logo}
+        alt="Carvalho Soluções em Auditoria"
+        width={1410}
+        height={450}
+        className="h-10 w-auto sm:h-12"
+      />
     </span>
   );
 });
@@ -28,7 +34,11 @@ export function SiteHeader() {
           <ul className="flex items-center gap-1">
             {navLinks.slice(1).map((l) => (
               <li key={l.to}>
-                <Link to={l.to} className="nav-link" activeProps={{ className: "nav-link nav-link-active" }}>
+                <Link
+                  to={l.to}
+                  className="nav-link"
+                  activeProps={{ className: "nav-link nav-link-active" }}
+                >
                   {l.label}
                 </Link>
               </li>
@@ -60,7 +70,10 @@ export function SiteHeader() {
                     to={l.to}
                     onClick={close}
                     className="block rounded-md px-3 py-3 text-base font-medium text-foreground hover:bg-muted"
-                    activeProps={{ className: "block rounded-md px-3 py-3 text-base font-semibold text-primary bg-muted" }}
+                    activeProps={{
+                      className:
+                        "block rounded-md px-3 py-3 text-base font-semibold text-primary bg-muted",
+                    }}
                     activeOptions={{ exact: true }}
                   >
                     {l.label}
