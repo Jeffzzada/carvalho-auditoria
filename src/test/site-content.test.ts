@@ -58,7 +58,7 @@ describe("Conteúdo do site", () => {
     const files = [...walk("src"), "index.html", "README.md"].filter((f) => {
       try {
         statSync(f);
-        return !f.includes("test/site-content");
+        return !f.replaceAll("\\", "/").includes("test/site-content");
       } catch {
         return false;
       }
@@ -75,7 +75,9 @@ describe("Conteúdo do site", () => {
     expect(siteConfig.email).toBe("");
     // O número só deve existir em um lugar do código: a configuração central.
     const withNumber = walk("src").filter(
-      (f) => /98450|5571984501050/.test(readFileSync(f, "utf8")) && !f.includes("/test/"),
+      (f) =>
+        /98450|5571984501050/.test(readFileSync(f, "utf8")) &&
+        !f.replaceAll("\\", "/").includes("/test/"),
     );
     expect(withNumber).toEqual([join("src", "config", "site.ts")]);
   });

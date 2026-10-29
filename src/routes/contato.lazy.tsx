@@ -2,6 +2,7 @@ import { createLazyRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, MapPin, Clock, Phone } from "lucide-react";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
+import { TextField } from "@/components/atendimento/FormControls";
 import {
   BUSINESS_HOURS,
   CONTACT_EMAIL,
@@ -10,7 +11,6 @@ import {
   whatsappUrl,
 } from "@/lib/whatsapp";
 import {
-  contactFields,
   hasContactErrors,
   validateContactField,
   validateContactForm,
@@ -22,96 +22,44 @@ export const Route = createLazyRoute("/contato")({
   component: Contato,
 });
 
-type FieldName = ContactFieldName | "contato";
-
 function Contato() {
   const [errors, setErrors] = useState<ContactErrors>({});
   const [sent, setSent] = useState(false);
 
-  function onBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    const name = e.currentTarget.name as FieldName;
-    if (!(name in contactFields)) return;
-    const error = validateContactField(name as ContactFieldName, e.currentTarget.value);
+  function onBlur(event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const name = event.currentTarget.name as ContactFieldName;
+    const error = validateContactField(name, event.currentTarget.value);
     setErrors((prev) => ({ ...prev, [name]: error }));
   }
 
-  function onChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    const name = e.currentTarget.name as FieldName;
-    if (!(name in contactFields)) return;
-    const typed = name as ContactFieldName;
-    if (errors[typed] && !validateContactField(typed, e.currentTarget.value)) {
-      setErrors((prev) => ({ ...prev, [typed]: undefined }));
+  function onChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const name = event.currentTarget.name as ContactFieldName;
+    if (errors[name] && !validateContactField(name, event.currentTarget.value)) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
-    const errs = validateContactForm(data);
-    if (hasContactErrors(errs)) {
-      setErrors(errs);
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget)) as Record<string, string>;
+    const formErrors = validateContactForm(data);
+    if (hasContactErrors(formErrors)) {
+      setErrors(formErrors);
       setSent(false);
       return;
     }
     setErrors({});
-    const msg = `Olá! Acessei o site da Carvalho Soluções em Auditoria.\n\nNome: ${data["nome"]}\nOrganização: ${data["organizacao"]}${data["contato"] ? `\nContato: ${data["contato"]}` : ""}\nAssunto: ${data["assunto"]}\n\n${data["mensagem"]}`;
+    const msg = `Olá! Acessei o site da Carvalho Soluções em Auditoria.\n\nNome: ${data["nome"]?.trim()}\nOrganização: ${data["organizacao"]?.trim()}${data["contato"]?.trim() ? `\nContato: ${data["contato"].trim()}` : ""}\nAssunto: ${data["assunto"]?.trim()}\n\n${data["mensagem"]?.trim()}`;
     window.open(whatsappUrl(msg), "_blank", "noopener,noreferrer");
     setSent(true);
   }
-
-  const field = (
-    name: FieldName,
-    label: string,
-    opts: { textarea?: boolean; optional?: boolean } = {},
-  ) => {
-    const error = (errors as Record<string, string | undefined>)[name];
-    const className = error ? "field field-invalid" : "field";
-    return (
-      <div>
-        <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-foreground">
-          {label}{" "}
-          {opts.optional && <span className="font-normal text-muted-foreground">(opcional)</span>}
-        </label>
-        {opts.textarea ? (
-          <textarea
-            id={name}
-            name={name}
-            rows={5}
-            maxLength={1000}
-            className={className}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${name}-err` : undefined}
-            onBlur={onBlur}
-            onChange={onChange}
-          />
-        ) : (
-          <input
-            id={name}
-            name={name}
-            type="text"
-            maxLength={120}
-            className={className}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${name}-err` : undefined}
-            onBlur={onBlur}
-            onChange={onChange}
-          />
-        )}
-        {error && (
-          <p id={`${name}-err`} className="mt-1 text-sm text-destructive">
-            {error}
-          </p>
-        )}
-      </div>
-    );
-  };
 
   const info = [
     { icon: Phone, label: "WhatsApp", value: WHATSAPP_DISPLAY },
     { icon: Mail, label: "E-mail", value: CONTACT_EMAIL },
     { icon: MapPin, label: "Área de atendimento", value: SERVICE_AREA },
     { icon: Clock, label: "Horário comercial", value: BUSINESS_HOURS },
-  ].filter((i) => i.value);
+  ].filter((item) => item.value);
 
   return (
     <section className="section">
@@ -130,12 +78,12 @@ function Contato() {
           </div>
           {info.length > 0 && (
             <ul className="mt-10 space-y-4">
-              {info.map((i) => (
-                <li key={i.label} className="flex gap-3">
-                  <i.icon className="mt-0.5 h-5 w-5 text-primary" />
+              {info.map((item) => (
+                <li key={item.label} className="flex gap-3">
+                  <item.icon className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-sm text-muted-foreground">{i.label}</p>
-                    <p className="font-medium text-foreground">{i.value}</p>
+                    <p className="text-sm text-muted-foreground">{item.label}</p>
+                    <p className="font-medium text-foreground">{item.value}</p>
                   </div>
                 </li>
               ))}
@@ -152,14 +100,52 @@ function Contato() {
               Prefere descrever antes?
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Preencha os campos e sua mensagem será aberta pronta no WhatsApp para envio.
+              Preencha os campos e sua mensagem será aberta pronta no WhatsApp para envio. Não
+              inclua senhas, dados bancários nem documentos confidenciais.
             </p>
           </div>
-          {field("nome", "Nome")}
-          {field("organizacao", "Organização")}
-          {field("contato", "E-mail ou telefone", { optional: true })}
-          {field("assunto", "Assunto")}
-          {field("mensagem", "Mensagem", { textarea: true })}
+          <TextField
+            id="nome"
+            label="Nome"
+            maxLength={120}
+            error={errors.nome}
+            onBlurEvent={onBlur}
+            onChangeEvent={onChange}
+          />
+          <TextField
+            id="organizacao"
+            label="Organização"
+            maxLength={120}
+            error={errors.organizacao}
+            onBlurEvent={onBlur}
+            onChangeEvent={onChange}
+          />
+          <TextField
+            id="contato"
+            label="E-mail ou telefone"
+            optional
+            maxLength={120}
+            error={errors.contato}
+            onBlurEvent={onBlur}
+            onChangeEvent={onChange}
+          />
+          <TextField
+            id="assunto"
+            label="Assunto"
+            maxLength={120}
+            error={errors.assunto}
+            onBlurEvent={onBlur}
+            onChangeEvent={onChange}
+          />
+          <TextField
+            id="mensagem"
+            label="Mensagem"
+            textarea
+            maxLength={1000}
+            error={errors.mensagem}
+            onBlurEvent={onBlur}
+            onChangeEvent={onChange}
+          />
           <button type="submit" className="btn btn-primary w-full">
             Abrir mensagem no WhatsApp
           </button>

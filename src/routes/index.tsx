@@ -6,6 +6,5 @@ export const Route = createFileRoute("/")({
     pageHead(
       "Carvalho Soluções em Auditoria",
       "Soluções de auditoria em sistemas e TI, financeira e contábil, fiscal e tributária e ambiental, conforme o escopo contratado.",
-      
     ),
 });

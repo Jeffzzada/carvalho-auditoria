@@ -30,20 +30,25 @@ const valid: Answers = {
 };
 
 describe("Validação do Atendimento", () => {
-  it("valida telefone com DDD", () => {
+  it("valida telefone com DDD e rejeita letras misturadas", () => {
     expect(isValidPhone("(71) 98450-1050")).toBe(true);
     expect(isValidPhone("+55 71 98450-1050")).toBe(true);
     expect(isValidPhone("(71) 3333-4444")).toBe(true);
     expect(isValidPhone("98450-1050")).toBe(false);
     expect(isValidPhone("(71) 88450-1050")).toBe(false);
+    expect(isValidPhone("falar com (71) 98450-1050 ramal 2")).toBe(false);
+    expect(isValidPhone("(00) 00000-0000")).toBe(false);
     expect(isValidPhone("")).toBe(false);
   });
 
-  it("valida e-mail e CNPJ (opcional)", () => {
+  it("valida e-mail e CNPJ (opcional), rejeitando letras e caracteres de injeção", () => {
     expect(isValidEmail("a@b.com.br")).toBe(true);
     expect(isValidEmail("a@b")).toBe(false);
+    expect(isValidEmail('evil"header@b.com.br')).toBe(false);
+    expect(isValidEmail("evil<script>@b.com.br")).toBe(false);
     expect(isValidCnpj("11.222.333/0001-81")).toBe(true);
     expect(isValidCnpj("11.222.333/0001-82")).toBe(false);
+    expect(isValidCnpj("CNPJ 11.222.333/0001-81")).toBe(false);
     expect(validateField("cnpj", { ...emptyAnswers, cnpj: "" })).toBeUndefined();
   });
 

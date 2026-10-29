@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { handleAtendimentoSubmission } from "@/lib/server/atendimento.server";
+import {
+  handleAtendimentoSubmission,
+  resetAtendimentoRateLimit,
+} from "@/lib/server/atendimento.server";
 import { emptyAnswers } from "@/lib/atendimento/types";
 
 const answers = {
@@ -16,13 +19,18 @@ const answers = {
   consentimentoPrivacidade: true,
 };
 
-const req = (body: unknown) =>
-  new Request("http://x/api/atendimento", { method: "POST", body: JSON.stringify(body) });
+const req = (body: unknown, headers?: HeadersInit) =>
+  new Request("http://x/api/atendimento", {
+    method: "POST",
+    body: JSON.stringify(body),
+    ...(headers ? { headers } : {}),
+  });
 const ok = { clientSubmissionId: "123e4567-e89b-12d3-a456-426614174000", answers, website: "" };
 
 describe("Recebimento de solicitações (servidor)", () => {
   const fetchMock = vi.fn();
   beforeEach(() => {
+    resetAtendimentoRateLimit();
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockReset();
   });
@@ -61,16 +69,23 @@ describe("Recebimento de solicitações (servidor)", () => {
       );
     });
 
-    it("envia e-mail de notificação quando Resend está configurado", async () => {
+    it("envia e-mail de notificação quando Resend está configurado e limpa CRLF no assunto", async () => {
       vi.stubEnv("RESEND_API_KEY", "re_key");
       vi.stubEnv("NOTIFY_EMAIL_TO", "equipe@exemplo.com");
       vi.stubEnv("NOTIFY_EMAIL_FROM", "Site <avisos@exemplo.com>");
       fetchMock
         .mockResolvedValueOnce(new Response(null, { status: 201 }))
         .mockResolvedValueOnce(new Response("{}", { status: 200 }));
-      const r = await handleAtendimentoSubmission(req(ok));
+      const r = await handleAtendimentoSubmission(
+        req({
+          ...ok,
+          answers: { ...answers, organizacao: "Empresa\r\nBcc: hacker@evil.com" },
+        }),
+      );
       expect(r.body).toEqual({ ok: true, notified: true });
       expect(fetchMock.mock.calls[1]![0]).toBe("https://api.resend.com/emails");
+      const emailPayload = JSON.parse((fetchMock.mock.calls[1]![1] as RequestInit).body as string);
+      expect(emailPayload.subject).not.toMatch(/[\r\n]/);
     });
 
     it("falha de gravação retorna erro (502)", async () => {
@@ -100,9 +115,34 @@ describe("Recebimento de solicitações (servidor)", () => {
         ).status,
       ).toBe(400);
       expect(
-        (await handleAtendimentoSubmission(req({ ...ok, descricao: "x".repeat(50_000) }))).status,
+        (
+          await handleAtendimentoSubmission(
+            req({ ...ok, answers: { ...answers, descricao: "x".repeat(50_000) } }),
+          )
+        ).status,
       ).toBe(413);
       expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("rejeita requisições cross-origin (CSRF) e aplica rate limit por IP", async () => {
+      expect(
+        (await handleAtendimentoSubmission(req(ok, { origin: "https://evil.example.com" }))).status,
+      ).toBe(403);
+      expect(
+        (await handleAtendimentoSubmission(req(ok, { "sec-fetch-site": "cross-site" }))).status,
+      ).toBe(403);
+
+      for (let i = 0; i < 10; i++) {
+        fetchMock.mockResolvedValueOnce(new Response(null, { status: 201 }));
+        const res = await handleAtendimentoSubmission(
+          req(ok, { "x-forwarded-for": "203.0.113.10" }),
+        );
+        expect(res.status).toBe(200);
+      }
+      const blocked = await handleAtendimentoSubmission(
+        req(ok, { "x-forwarded-for": "203.0.113.10" }),
+      );
+      expect(blocked.status).toBe(429);
     });
   });
 });

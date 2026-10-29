@@ -1,5 +1,5 @@
 import { getService, services, type ServiceId } from "@/lib/content";
-import { SERVICO_INDEFINIDO } from "./options";
+import { TIPO_FIELDS } from "./options";
 import type { Answers } from "./types";
 import { isPublico } from "./validation";
 
@@ -20,9 +20,9 @@ const KEYWORDS: Record<ServiceId, RegExp> = {
 };
 
 /** Sugere a área de atendimento mais adequada. Não é diagnóstico nem parecer técnico. */
-export function suggestArea(a: Answers): AreaSugerida {
-  const areas = a.servicos.map((id) => getService(id)?.shortTitle ?? id);
-  const publico = isPublico(a.porte);
+export function suggestArea(answers: Answers): AreaSugerida {
+  const areas = answers.servicos.map((id) => getService(id)?.shortTitle ?? id);
+  const publico = isPublico(answers.porte);
 
   let observacao: string | undefined;
   if (publico) {
@@ -32,13 +32,13 @@ export function suggestArea(a: Answers): AreaSugerida {
 
   if (areas.length === 0) {
     const text = [
-      a.descricao,
-      a.necessidadeIntegrada,
-      ...Object.values(a.tipoDetalhes),
-      a.necessidadeSetorPublico,
+      answers.descricao,
+      answers.necessidadeIntegrada,
+      ...Object.values(answers.tipoDetalhes),
+      publico ? answers.necessidadeSetorPublico : "",
     ].join(" ");
-    for (const s of services) {
-      if (KEYWORDS[s.id].test(text)) areas.push(s.shortTitle);
+    for (const service of services) {
+      if (KEYWORDS[service.id].test(text)) areas.push(service.shortTitle);
     }
   }
   return observacao ? { areas, observacao } : { areas };
@@ -47,102 +47,106 @@ export function suggestArea(a: Answers): AreaSugerida {
 const line = (label: string, value: string | undefined) =>
   value && value.trim() ? `${label}: ${value.trim()}` : null;
 
-export function servicosResumo(a: Answers): string[] {
+export function servicosResumo(answers: Answers): string[] {
   const out: string[] = [];
-  for (const id of a.servicos) {
-    const s = getService(id);
-    if (!s) continue;
-    const subs = (a.subopcoes[id] ?? []).map((o) =>
-      o === "Outra" && a.subopcaoOutra[id]?.trim() ? `Outra: ${a.subopcaoOutra[id]!.trim()}` : o,
+  for (const id of answers.servicos) {
+    const service = getService(id);
+    if (!service) continue;
+    const subs = (answers.subopcoes[id] ?? []).map((option) =>
+      option === "Outra" && answers.subopcaoOutra[id]?.trim()
+        ? `Outra: ${answers.subopcaoOutra[id]!.trim()}`
+        : option,
     );
-    out.push(subs.length ? `${s.shortTitle} (${subs.join("; ")})` : s.shortTitle);
+    out.push(subs.length ? `${service.shortTitle} (${subs.join("; ")})` : service.shortTitle);
   }
-  if (a.servicoIndefinido) out.push("Ainda não sei qual serviço preciso");
+  if (answers.servicoIndefinido) out.push("Ainda não sei qual serviço preciso");
   return out;
 }
 
-const TIPO_LABELS: Record<string, string> = {
-  duvida: "Dúvida, problema ou decisão",
-  objetivo: "Objetivo",
-  escopo: "Escopo pretendido",
-  docPrevia: "Documentação ou definição prévia",
-  riscos: "Principais riscos, dificuldades ou processos",
-  area: "Área relacionada",
-  escopoDefinido: "Escopo definido",
-  prazoDesejado: "Prazo desejado",
-  condicoes: "Condições relevantes",
-  outroDescricao: "Detalhe",
-};
+const TIPO_LABELS: Record<string, string> = Object.fromEntries(
+  Object.values(TIPO_FIELDS)
+    .flat()
+    .map((field) => [field.key, field.summaryLabel]),
+);
 
-export function tipoDetalhesResumo(a: Answers): string[] {
-  return Object.entries(a.tipoDetalhes)
-    .filter(([, v]) => v && v.trim())
-    .map(([k, v]) => `${TIPO_LABELS[k] ?? k}: ${v.trim()}`);
+export function tipoDetalhesPairs(answers: Answers): [string, string][] {
+  return Object.entries(answers.tipoDetalhes)
+    .filter(([, value]) => value && value.trim())
+    .map(([key, value]) => [TIPO_LABELS[key] ?? key, value.trim()]);
+}
+
+export function tipoDetalhesResumo(answers: Answers): string[] {
+  return tipoDetalhesPairs(answers).map(([label, value]) => `${label}: ${value}`);
 }
 
 /** Resumo organizado para a equipe (texto simples). */
-export function buildTeamSummary(a: Answers): string {
-  const area = suggestArea(a);
-  const origem = a.origem
+export function buildTeamSummary(answers: Answers): string {
+  const area = suggestArea(answers);
+  const origem = answers.origem
     ? [
-        a.origem,
-        a.origemDetalhe.trim(),
-        a.indicadoPor.trim() ? `indicado por ${a.indicadoPor.trim()}` : "",
+        answers.origem,
+        answers.origemDetalhe.trim(),
+        answers.indicadoPor.trim() ? `indicado por ${answers.indicadoPor.trim()}` : "",
       ]
         .filter(Boolean)
         .join(" | ")
     : "Não informada";
   const sections: (string | null)[] = [
     "RESPONSÁVEL",
-    line("Nome", a.nome),
-    line("Cargo/função", a.cargo),
-    line("Telefone", a.telefone),
-    line("WhatsApp", a.whatsapp),
-    line("E-mail", a.email),
+    line("Nome", answers.nome),
+    line("Cargo/função", answers.cargo),
+    line("Telefone", answers.telefone),
+    line("WhatsApp", answers.whatsapp),
+    line("E-mail", answers.email),
     "",
     "ORGANIZAÇÃO",
-    line("Nome", a.organizacao),
-    line("CNPJ", a.cnpj),
-    line("Porte", a.porte || "Não informado"),
-    line("Faturamento bruto anual (qualificação comercial)", a.faturamento || "Não informado"),
-    isPublico(a.porte)
-      ? line("Natureza da entidade", a.naturezaEntidade || "Não informada")
-      : line("Regime tributário informado", a.regime || "Não informado"),
-    isPublico(a.porte) ? line("Necessidade no setor público", a.necessidadeSetorPublico) : null,
-    line("Localização", [a.cidade.trim(), a.estado].filter(Boolean).join("/")),
-    line("Região de atendimento", a.regiao),
-    line("Modalidade", a.modalidade || "Não informada"),
+    line("Nome", answers.organizacao),
+    line("CNPJ", answers.cnpj),
+    line("Porte", answers.porte || "Não informado"),
+    line(
+      "Faturamento bruto anual (qualificação comercial)",
+      answers.faturamento || "Não informado",
+    ),
+    isPublico(answers.porte)
+      ? line("Natureza da entidade", answers.naturezaEntidade || "Não informada")
+      : line("Regime tributário informado", answers.regime || "Não informado"),
+    isPublico(answers.porte)
+      ? line("Necessidade no setor público", answers.necessidadeSetorPublico)
+      : null,
+    line("Localização", [answers.cidade.trim(), answers.estado].filter(Boolean).join("/")),
+    line("Região de atendimento", answers.regiao),
+    line("Modalidade", answers.modalidade || "Não informada"),
     "",
     "ORIGEM DO CONTATO",
     origem,
     "",
     "NECESSIDADE",
-    line("Serviços de interesse", servicosResumo(a).join(" | ") || "Não informado"),
-    line("Necessidade integrada", a.necessidadeIntegrada),
-    line("Tipo de atendimento", a.tipo),
-    ...tipoDetalhesResumo(a),
-    line("Descrição", a.descricao),
-    line("Prazo desejado", a.prazo || "Não informado"),
+    line("Serviços de interesse", servicosResumo(answers).join(" | ") || "Não informado"),
+    line("Necessidade integrada", answers.necessidadeIntegrada),
+    line("Tipo de atendimento", answers.tipo),
+    ...tipoDetalhesResumo(answers),
+    line("Descrição", answers.descricao),
+    line("Prazo desejado", answers.prazo || "Não informado"),
     "",
     "DIRECIONAMENTO SUGERIDO (organização do atendimento, sem diagnóstico ou parecer técnico)",
     area.areas.length ? area.areas.join(" | ") : "A definir pela equipe",
     area.observacao ?? null,
   ];
-  return sections.filter((s): s is string => s !== null).join("\n");
+  return sections.filter((section): section is string => section !== null).join("\n");
 }
 
 /** Mensagem de WhatsApp com resumo NÃO sensível: nome, serviço de interesse e tipo de atendimento. */
-export function buildWhatsAppSummary(a: Answers): string {
-  const nome = a.nome.trim();
-  const servicos = servicosResumo(a)
-    .map((s) => s.replace(/\s*\(.*\)$/, ""))
+export function buildWhatsAppSummary(answers: Answers): string {
+  const nome = answers.nome.trim();
+  const servicos = servicosResumo(answers)
+    .map((service) => service.replace(/\s*\(.*\)$/, ""))
     .join(", ");
   const parts = [
     "Olá! Acessei o site da Carvalho Soluções em Auditoria e iniciei um pedido de atendimento.",
   ];
   if (nome) parts.push(`Nome: ${nome}`);
   if (servicos) parts.push(`Serviço de interesse: ${servicos}`);
-  if (a.tipo) parts.push(`Tipo de atendimento: ${a.tipo}`);
+  if (answers.tipo) parts.push(`Tipo de atendimento: ${answers.tipo}`);
   return parts.join("\n");
 }
 
@@ -153,5 +157,3 @@ export type AtendimentoPayload = {
   /** Honeypot anti-spam: deve ficar vazio. */
   website: string;
 };
-
-export const SERVICO_INDEFINIDO_ID = SERVICO_INDEFINIDO;

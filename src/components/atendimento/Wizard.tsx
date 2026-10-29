@@ -4,19 +4,20 @@ import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { getService, services, type ServiceId } from "@/lib/content";
 import { cn } from "@/lib/utils";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
+import { Choice, ChoiceGrid, FieldWrap, TextField } from "./FormControls";
 import {
-  AREAS_DUVIDA,
   ESTADOS,
   FATURAMENTOS,
   MODALIDADES,
   NATUREZAS_PUBLICAS,
   NECESSIDADES_PUBLICAS,
+  ORIGEM_OUTRO,
   ORIGENS,
   PORTES,
   PRAZOS,
-  SIM_NAO,
   SUBOPCAO_OUTRA,
   SUBOPCOES,
+  TIPO_FIELDS,
   TIPOS,
   regimesParaPorte,
 } from "@/lib/atendimento/options";
@@ -31,7 +32,7 @@ import {
   buildWhatsAppSummary,
   servicosResumo,
   suggestArea,
-  tipoDetalhesResumo,
+  tipoDetalhesPairs,
   type AtendimentoPayload,
 } from "@/lib/atendimento/summary";
 import {
@@ -67,212 +68,6 @@ const TITLES: Record<ScreenId, string> = {
 
 type Status = "idle" | "sending" | "error" | "success";
 
-type TipoField = {
-  key: string;
-  label: string;
-  kind: "textarea" | "text" | "choice";
-  options?: readonly string[];
-};
-
-const TIPO_FIELDS: Record<string, TipoField[]> = {
-  "Consultoria ou orientação técnica": [
-    {
-      key: "duvida",
-      label: "Qual dúvida, problema ou decisão precisa de apoio?",
-      kind: "textarea",
-    },
-  ],
-  "Contratação de serviço": [
-    { key: "objetivo", label: "Qual o objetivo da contratação?", kind: "textarea" },
-    { key: "escopo", label: "Qual o escopo pretendido?", kind: "textarea" },
-    {
-      key: "docPrevia",
-      label: "Há documentação ou definição prévia?",
-      kind: "choice",
-      options: SIM_NAO,
-    },
-  ],
-  "Diagnóstico inicial": [
-    {
-      key: "riscos",
-      label: "Quais os principais riscos, dificuldades ou processos a avaliar?",
-      kind: "textarea",
-    },
-  ],
-  "Esclarecimento de dúvidas": [
-    { key: "duvida", label: "Descreva a sua dúvida", kind: "textarea" },
-    { key: "area", label: "Qual área está relacionada?", kind: "choice", options: AREAS_DUVIDA },
-  ],
-  "Solicitação de proposta comercial": [
-    {
-      key: "escopoDefinido",
-      label: "O escopo já está definido?",
-      kind: "choice",
-      options: SIM_NAO,
-    },
-    { key: "prazoDesejado", label: "Qual o prazo desejado?", kind: "text" },
-    { key: "condicoes", label: "Há condições relevantes a considerar?", kind: "textarea" },
-  ],
-  Outro: [
-    {
-      key: "outroDescricao",
-      label: "Descreva o tipo de atendimento que você procura",
-      kind: "textarea",
-    },
-  ],
-};
-
-/* ---------- Componentes de formulário ---------- */
-
-function Choice({
-  selected,
-  onClick,
-  children,
-  className,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-      className={cn(
-        "flex min-h-12 items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left text-[0.95rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        selected
-          ? "border-primary bg-accent text-primary"
-          : "border-input bg-background text-foreground hover:border-lilac hover:bg-surface",
-        className,
-      )}
-    >
-      <span>{children}</span>
-      {selected && <Check className="h-4 w-4 shrink-0" aria-hidden />}
-    </button>
-  );
-}
-
-function ChoiceGrid({
-  label,
-  options,
-  value,
-  onChange,
-  columns = 2,
-}: {
-  label: string;
-  options: readonly string[];
-  value: string;
-  onChange: (v: string) => void;
-  columns?: 1 | 2;
-}) {
-  return (
-    <div
-      role="group"
-      aria-label={label}
-      className={cn("grid gap-3", columns === 2 && "sm:grid-cols-2")}
-    >
-      {options.map((o) => (
-        <Choice key={o} selected={value === o} onClick={() => onChange(value === o ? "" : o)}>
-          {o}
-        </Choice>
-      ))}
-    </div>
-  );
-}
-
-function FieldWrap({
-  id,
-  label,
-  optional,
-  error,
-  hint,
-  children,
-}: {
-  id: string;
-  label: string;
-  optional?: boolean | undefined;
-  error?: string | undefined;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-foreground">
-        {label} {optional && <span className="font-normal text-muted-foreground">(opcional)</span>}
-      </label>
-      {children}
-      {hint && !error && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      {error && (
-        <p id={`${id}-err`} className="mt-1 text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-type TextProps = {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  onBlur?: () => void;
-  error?: string | undefined;
-  optional?: boolean;
-  hint?: string;
-  type?: "text" | "email" | "tel";
-  textarea?: boolean;
-  autoComplete?: string;
-  maxLength?: number;
-  inputMode?: "text" | "email" | "tel" | "numeric";
-};
-
-function TextField({
-  id,
-  label,
-  value,
-  onChange,
-  onBlur,
-  error,
-  optional,
-  hint,
-  type = "text",
-  textarea,
-  autoComplete,
-  maxLength,
-  inputMode,
-}: TextProps) {
-  const common = {
-    id,
-    name: id,
-    value,
-    "aria-invalid": !!error,
-    "aria-describedby": error ? `${id}-err` : undefined,
-    className: error ? "field field-invalid" : "field",
-    onBlur,
-    maxLength: maxLength ?? (textarea ? 1500 : 160),
-    autoComplete,
-  };
-  return (
-    <FieldWrap id={id} label={label} optional={optional} error={error} {...(hint ? { hint } : {})}>
-      {textarea ? (
-        <textarea {...common} rows={5} onChange={(e) => onChange(e.target.value)} />
-      ) : (
-        <input
-          {...common}
-          type={type}
-          {...(inputMode ? { inputMode } : {})}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )}
-    </FieldWrap>
-  );
-}
-
-/* ---------- Componente principal ---------- */
-
 export function Wizard({ initialService }: { initialService?: ServiceId | undefined }) {
   const [answers, setAnswers] = useState<Answers>(() => ({
     ...emptyAnswers,
@@ -296,21 +91,21 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
   // Se o usuário chegou por um CTA de serviço diferente, atualiza a pré-seleção.
   useEffect(() => {
     if (initialService) {
-      setAnswers((a) =>
-        a.servicos.includes(initialService)
-          ? a
-          : { ...a, servicos: [initialService], servicoIndefinido: false },
+      setAnswers((prev) =>
+        prev.servicos.includes(initialService)
+          ? prev
+          : { ...prev, servicos: [initialService], servicoIndefinido: false },
       );
     }
   }, [initialService]);
 
-  const set = useCallback(<K extends keyof Answers>(key: K, value: Answers[K]) => {
-    setAnswers((a) => ({ ...a, [key]: value }));
+  const setAnswer = useCallback(<K extends keyof Answers>(key: K, value: Answers[K]) => {
+    setAnswers((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   const answersRef = useRef(answers);
   answersRef.current = answers;
-  const blur = useCallback(
+  const handleBlur = useCallback(
     (name: string) => () => {
       setErrors((prev) => ({ ...prev, [name]: validateField(name, answersRef.current) }));
     },
@@ -318,105 +113,164 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
   );
 
   // Limpa o erro assim que o campo passa a ser válido.
-  const clearIfValid = (name: string, next: Answers) => {
-    if (errors[name] && !validateField(name, next))
+  const clearIfValid = (name: string, nextAnswers: Answers) => {
+    if (errors[name] && !validateField(name, nextAnswers)) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
-  const text = (name: keyof Answers & string) => (v: string) => {
-    const next = { ...answers, [name]: v } as Answers;
-    setAnswers(next);
-    clearIfValid(name, next);
+  const updateTextField = (name: keyof Answers & string) => (value: string) => {
+    const nextAnswers = { ...answers, [name]: value } as Answers;
+    setAnswers(nextAnswers);
+    clearIfValid(name, nextAnswers);
   };
 
   const index = SCREEN_ORDER.indexOf(screen);
   const total = SCREEN_ORDER.length;
   const publico = isPublico(answers.porte);
 
-  const go = (s: ScreenId) => {
-    setErrors({});
-    setScreen(s);
+  const navigateTo = (targetScreen: ScreenId, initialErrors: FieldErrors = {}) => {
+    setErrors(initialErrors);
+    setScreen(targetScreen);
   };
 
   const next = () => {
-    if (screen === "boas-vindas") return go("responsavel");
-    const errs = validateScreen(screen, answers);
-    if (hasErrors(errs)) {
-      setErrors(errs);
+    if (screen === "boas-vindas") return navigateTo("responsavel");
+    const screenErrors = validateScreen(screen, answers);
+    if (hasErrors(screenErrors)) {
+      setErrors(screenErrors);
       return;
     }
     if (fromReview) {
       setFromReview(false);
-      return go("revisao");
+      return navigateTo("revisao");
     }
     const nextScreen = SCREEN_ORDER[index + 1];
-    if (nextScreen) go(nextScreen);
+    if (nextScreen) navigateTo(nextScreen);
   };
 
   const back = () => {
     if (fromReview) {
+      const screenErrors = validateScreen(screen, answers);
+      if (hasErrors(screenErrors)) {
+        setErrors(screenErrors);
+        return;
+      }
       setFromReview(false);
-      return go("revisao");
+      return navigateTo("revisao");
     }
-    if (index <= 0) return go("boas-vindas");
-    const prev = SCREEN_ORDER[index - 1];
-    if (prev) go(prev);
+    if (index <= 0) return navigateTo("boas-vindas");
+    const prevScreen = SCREEN_ORDER[index - 1];
+    if (prevScreen) navigateTo(prevScreen);
   };
 
-  const edit = (s: ScreenId) => {
+  const edit = (targetScreen: ScreenId, initialErrors: FieldErrors = {}) => {
     setFromReview(true);
-    go(s);
+    navigateTo(targetScreen, initialErrors);
+  };
+
+  const restartReviewFlow = () => {
+    setFromReview(false);
+    navigateTo("responsavel");
   };
 
   const setPorte = (porte: string) => {
-    setAnswers((a) => {
+    setAnswers((prev) => {
+      if (isPublico(porte)) {
+        return { ...prev, porte, regime: "" };
+      }
       const allowed = regimesParaPorte(porte);
-      const regimeOk = !a.regime || (allowed as readonly string[]).includes(a.regime);
-      return { ...a, porte, regime: regimeOk ? a.regime : "" };
+      const regimeOk = !prev.regime || (allowed as readonly string[]).includes(prev.regime);
+      return {
+        ...prev,
+        porte,
+        regime: regimeOk ? prev.regime : "",
+        naturezaEntidade: "",
+        necessidadeSetorPublico: "",
+      };
     });
+  };
+
+  const setOrigem = (origem: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      origem,
+      origemDetalhe: origem === ORIGEM_OUTRO ? prev.origemDetalhe : "",
+      indicadoPor: isIndicacao(origem) ? prev.indicadoPor : "",
+    }));
+    setErrors((prev) => ({ ...prev, origemDetalhe: undefined }));
   };
 
   const toggleService = (id: ServiceId) => {
-    setAnswers((a) => {
-      const selected = a.servicos.includes(id);
-      const servicos = selected ? a.servicos.filter((s) => s !== id) : [...a.servicos, id];
-      return { ...a, servicos, servicoIndefinido: false };
+    setAnswers((prev) => {
+      const selected = prev.servicos.includes(id);
+      const servicos = selected ? prev.servicos.filter((s) => s !== id) : [...prev.servicos, id];
+      const nextSubopcoes = { ...prev.subopcoes };
+      const nextSubopcaoOutra = { ...prev.subopcaoOutra };
+      if (selected) {
+        delete nextSubopcoes[id];
+        delete nextSubopcaoOutra[id];
+      }
+      return {
+        ...prev,
+        servicos,
+        servicoIndefinido: false,
+        subopcoes: nextSubopcoes,
+        subopcaoOutra: nextSubopcaoOutra,
+        necessidadeIntegrada: servicos.length > 1 ? prev.necessidadeIntegrada : "",
+      };
     });
-    setErrors((e) => ({ ...e, servicos: undefined }));
+    setErrors((prev) => ({ ...prev, servicos: undefined, [`outra-${id}`]: undefined }));
   };
 
   const toggleSub = (id: ServiceId, option: string) => {
-    setAnswers((a) => {
-      const current = a.subopcoes[id] ?? [];
-      const updated = current.includes(option)
-        ? current.filter((o) => o !== option)
-        : [...current, option];
-      return { ...a, subopcoes: { ...a.subopcoes, [id]: updated } };
+    setAnswers((prev) => {
+      const current = prev.subopcoes[id] ?? [];
+      const isSelected = current.includes(option);
+      const updated = isSelected ? current.filter((o) => o !== option) : [...current, option];
+      const nextSubopcaoOutra = { ...prev.subopcaoOutra };
+      if (isSelected && option === SUBOPCAO_OUTRA) {
+        delete nextSubopcaoOutra[id];
+      }
+      return {
+        ...prev,
+        subopcoes: { ...prev.subopcoes, [id]: updated },
+        subopcaoOutra: nextSubopcaoOutra,
+      };
     });
+    if (option === SUBOPCAO_OUTRA) {
+      setErrors((prev) => ({ ...prev, [`outra-${id}`]: undefined }));
+    }
   };
 
   const setTipoDetalhe = (key: string, value: string) => {
-    setAnswers((a) => ({ ...a, tipoDetalhes: { ...a.tipoDetalhes, [key]: value } }));
+    setAnswers((prev) => ({ ...prev, tipoDetalhes: { ...prev.tipoDetalhes, [key]: value } }));
   };
 
   const setTipo = (tipo: string) => {
     // Perguntas condicionais pertencem ao tipo escolhido: ao trocar, descartamos as anteriores.
-    setAnswers((a) => ({ ...a, tipo, tipoDetalhes: tipo === a.tipo ? a.tipoDetalhes : {} }));
-    setErrors((e) => ({ ...e, tipo: undefined }));
+    setAnswers((prev) => ({
+      ...prev,
+      tipo,
+      tipoDetalhes: tipo === prev.tipo ? prev.tipoDetalhes : {},
+    }));
+    setErrors((prev) => ({ ...prev, tipo: undefined }));
   };
 
   /* ---------- Envio ---------- */
 
   const submit = async () => {
     if (sendingRef.current || status === "success") return; // evita envios duplicados
-    const errs = validateAll(answers);
-    if (hasErrors(errs)) {
-      setErrors(errs);
-      // volta para a primeira tela com pendência
+    const allErrors = validateAll(answers);
+    if (hasErrors(allErrors)) {
       const target = (
         ["responsavel", "localizacao", "origem", "servicos", "tipo", "detalhamento"] as ScreenId[]
       ).find((s) => hasErrors(validateScreen(s, answers)));
-      if (target) edit(target);
+      if (target) {
+        edit(target, validateScreen(target, answers));
+      } else {
+        setErrors(allErrors);
+      }
       return;
     }
     sendingRef.current = true;
@@ -533,8 +387,8 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
               id="nome"
               label="Nome completo"
               value={answers.nome}
-              onChange={text("nome")}
-              onBlur={blur("nome")}
+              onChange={updateTextField("nome")}
+              onBlur={handleBlur("nome")}
               error={errors["nome"]}
               autoComplete="name"
             />
@@ -543,7 +397,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             id="cargo"
             label="Cargo ou função"
             value={answers.cargo}
-            onChange={text("cargo")}
+            onChange={updateTextField("cargo")}
             optional
             autoComplete="organization-title"
           />
@@ -551,8 +405,8 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             id="organizacao"
             label="Empresa ou organização"
             value={answers.organizacao}
-            onChange={text("organizacao")}
-            onBlur={blur("organizacao")}
+            onChange={updateTextField("organizacao")}
+            onBlur={handleBlur("organizacao")}
             error={errors["organizacao"]}
             autoComplete="organization"
           />
@@ -560,8 +414,8 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             id="cnpj"
             label="CNPJ"
             value={answers.cnpj}
-            onChange={text("cnpj")}
-            onBlur={blur("cnpj")}
+            onChange={updateTextField("cnpj")}
+            onBlur={handleBlur("cnpj")}
             error={errors["cnpj"]}
             optional
             inputMode="numeric"
@@ -570,19 +424,19 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             id="telefone"
             label="Telefone com DDD"
             value={answers.telefone}
-            onChange={text("telefone")}
-            onBlur={blur("telefone")}
+            onChange={updateTextField("telefone")}
+            onBlur={handleBlur("telefone")}
             error={errors["telefone"]}
             type="tel"
             autoComplete="tel"
-            hint="Exemplo: (00) 00000-0000"
+            hint="Exemplo: (71) 99999-9999"
           />
           <TextField
             id="whatsapp"
             label="WhatsApp, se for diferente do telefone"
             value={answers.whatsapp}
-            onChange={text("whatsapp")}
-            onBlur={blur("whatsapp")}
+            onChange={updateTextField("whatsapp")}
+            onBlur={handleBlur("whatsapp")}
             error={errors["whatsapp"]}
             optional
             type="tel"
@@ -591,8 +445,8 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             id="email"
             label="E-mail"
             value={answers.email}
-            onChange={text("email")}
-            onBlur={blur("email")}
+            onChange={updateTextField("email")}
+            onBlur={handleBlur("email")}
             error={errors["email"]}
             type="email"
             autoComplete="email"
@@ -621,7 +475,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             label="Faturamento bruto anual"
             options={FATURAMENTOS}
             value={answers.faturamento}
-            onChange={(v) => set("faturamento", v)}
+            onChange={(value) => setAnswer("faturamento", value)}
           />
         </div>
       );
@@ -634,7 +488,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             label="Natureza da entidade"
             options={NATUREZAS_PUBLICAS}
             value={answers.naturezaEntidade}
-            onChange={(v) => set("naturezaEntidade", v)}
+            onChange={(value) => setAnswer("naturezaEntidade", value)}
             columns={1}
           />
           <div>
@@ -645,7 +499,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
               label="Necessidade no setor público"
               options={NECESSIDADES_PUBLICAS}
               value={answers.necessidadeSetorPublico}
-              onChange={(v) => set("necessidadeSetorPublico", v)}
+              onChange={(value) => setAnswer("necessidadeSetorPublico", value)}
             />
           </div>
         </div>
@@ -658,7 +512,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             label="Regime tributário"
             options={regimesParaPorte(answers.porte)}
             value={answers.regime}
-            onChange={(v) => set("regime", v)}
+            onChange={(value) => setAnswer("regime", value)}
           />
         </div>
       );
@@ -671,8 +525,8 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             id="cidade"
             label="Cidade"
             value={answers.cidade}
-            onChange={text("cidade")}
-            onBlur={blur("cidade")}
+            onChange={updateTextField("cidade")}
+            onBlur={handleBlur("cidade")}
             error={errors["cidade"]}
             autoComplete="address-level2"
           />
@@ -685,10 +539,10 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
               aria-describedby={errors["estado"] ? "estado-err" : undefined}
               className={errors["estado"] ? "field field-invalid" : "field"}
               onChange={(e) => {
-                set("estado", e.target.value);
-                setErrors((p) => ({ ...p, estado: undefined }));
+                setAnswer("estado", e.target.value);
+                setErrors((prev) => ({ ...prev, estado: undefined }));
               }}
-              onBlur={blur("estado")}
+              onBlur={handleBlur("estado")}
             >
               <option value="">Selecione</option>
               {ESTADOS.map((uf) => (
@@ -703,7 +557,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
               id="regiao"
               label="Região de atendimento"
               value={answers.regiao}
-              onChange={text("regiao")}
+              onChange={updateTextField("regiao")}
               optional
               hint="Pode ser diferente da sede, se o serviço for em outro local."
             />
@@ -722,7 +576,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             label="Modalidade"
             options={MODALIDADES}
             value={answers.modalidade}
-            onChange={(v) => set("modalidade", v)}
+            onChange={(value) => setAnswer("modalidade", value)}
           />
         </div>
       );
@@ -735,15 +589,15 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             label="Origem do contato"
             options={ORIGENS}
             value={answers.origem}
-            onChange={(v) => set("origem", v)}
+            onChange={setOrigem}
           />
-          {answers.origem === "Outro" && (
+          {answers.origem === ORIGEM_OUTRO && (
             <TextField
               id="origemDetalhe"
               label="Conte-nos como nos conheceu"
               value={answers.origemDetalhe}
-              onChange={text("origemDetalhe")}
-              onBlur={blur("origemDetalhe")}
+              onChange={updateTextField("origemDetalhe")}
+              onBlur={handleBlur("origemDetalhe")}
               error={errors["origemDetalhe"]}
             />
           )}
@@ -752,7 +606,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
               id="indicadoPor"
               label="Quem indicou?"
               value={answers.indicadoPor}
-              onChange={text("indicadoPor")}
+              onChange={updateTextField("indicadoPor")}
               optional
             />
           )}
@@ -767,12 +621,12 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
       body = (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">Você pode selecionar mais de um serviço.</p>
-          {services.map((s) => {
-            const selected = answers.servicos.includes(s.id);
-            const outraSelecionada = (answers.subopcoes[s.id] ?? []).includes(SUBOPCAO_OUTRA);
+          {services.map((service) => {
+            const selected = answers.servicos.includes(service.id);
+            const outraSelecionada = (answers.subopcoes[service.id] ?? []).includes(SUBOPCAO_OUTRA);
             return (
               <div
-                key={s.id}
+                key={service.id}
                 className={cn(
                   "rounded-xl border p-4 transition-colors",
                   selected ? "border-primary bg-accent/40" : "border-input",
@@ -780,12 +634,12 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
               >
                 <Choice
                   selected={selected}
-                  onClick={() => toggleService(s.id)}
+                  onClick={() => toggleService(service.id)}
                   className="w-full border-0 bg-transparent p-0 hover:bg-transparent"
                 >
                   <span className="flex items-center gap-3">
-                    <s.icon className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
-                    {s.title}
+                    <service.icon className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
+                    {service.title}
                   </span>
                 </Choice>
                 {selected && (
@@ -794,35 +648,37 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
                       O que você gostaria de avaliar? (opcional)
                     </legend>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      {SUBOPCOES[s.id].map((o) => (
+                      {SUBOPCOES[service.id].map((option) => (
                         <label
-                          key={o}
+                          key={option}
                           className="flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-surface"
                         >
                           <input
                             type="checkbox"
                             className="h-4 w-4 accent-[var(--primary)]"
-                            checked={(answers.subopcoes[s.id] ?? []).includes(o)}
-                            onChange={() => toggleSub(s.id, o)}
+                            checked={(answers.subopcoes[service.id] ?? []).includes(option)}
+                            onChange={() => toggleSub(service.id, option)}
                           />
-                          {o}
+                          {option}
                         </label>
                       ))}
                     </div>
                     {outraSelecionada && (
                       <div className="mt-3">
                         <TextField
-                          id={`outra-${s.id}`}
+                          id={`outra-${service.id}`}
                           label="Descreva a outra necessidade"
-                          value={answers.subopcaoOutra[s.id] ?? ""}
-                          onChange={(v) =>
-                            setAnswers((a) => ({
-                              ...a,
-                              subopcaoOutra: { ...a.subopcaoOutra, [s.id]: v },
-                            }))
-                          }
-                          onBlur={blur(`outra-${s.id}`)}
-                          error={errors[`outra-${s.id}`]}
+                          value={answers.subopcaoOutra[service.id] ?? ""}
+                          onChange={(value) => {
+                            const nextAnswers = {
+                              ...answers,
+                              subopcaoOutra: { ...answers.subopcaoOutra, [service.id]: value },
+                            };
+                            setAnswers(nextAnswers);
+                            clearIfValid(`outra-${service.id}`, nextAnswers);
+                          }}
+                          onBlur={handleBlur(`outra-${service.id}`)}
+                          error={errors[`outra-${service.id}`]}
                         />
                       </div>
                     )}
@@ -834,12 +690,18 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
           <Choice
             selected={answers.servicoIndefinido}
             onClick={() => {
-              setAnswers((a) => ({
-                ...a,
-                servicoIndefinido: !a.servicoIndefinido,
-                servicos: a.servicoIndefinido ? a.servicos : [],
-              }));
-              setErrors((e) => ({ ...e, servicos: undefined }));
+              setAnswers((prev) => {
+                const nextIndefinido = !prev.servicoIndefinido;
+                return {
+                  ...prev,
+                  servicoIndefinido: nextIndefinido,
+                  servicos: nextIndefinido ? [] : prev.servicos,
+                  subopcoes: nextIndefinido ? {} : prev.subopcoes,
+                  subopcaoOutra: nextIndefinido ? {} : prev.subopcaoOutra,
+                  necessidadeIntegrada: nextIndefinido ? "" : prev.necessidadeIntegrada,
+                };
+              });
+              setErrors((prev) => ({ ...prev, servicos: undefined }));
             }}
             className="w-full"
           >
@@ -850,7 +712,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
               id="necessidadeIntegrada"
               label="Se quiser, descreva uma necessidade integrada entre esses serviços"
               value={answers.necessidadeIntegrada}
-              onChange={text("necessidadeIntegrada")}
+              onChange={updateTextField("necessidadeIntegrada")}
               optional
               textarea
             />
@@ -873,6 +735,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             value={answers.tipo}
             onChange={setTipo}
             columns={1}
+            allowDeselect={false}
           />
           {errors["tipo"] && (
             <p className="mt-3 text-sm text-destructive" role="alert">
@@ -891,26 +754,26 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             Tipo escolhido: <strong className="text-foreground">{answers.tipo}</strong>. As
             perguntas abaixo são opcionais.
           </p>
-          {fields.map((f) =>
-            f.kind === "choice" ? (
-              <div key={f.key}>
-                <h3 className="mb-3 text-sm font-medium text-foreground">{f.label}</h3>
+          {fields.map((field) =>
+            field.kind === "choice" ? (
+              <div key={field.key}>
+                <h3 className="mb-3 text-sm font-medium text-foreground">{field.label}</h3>
                 <ChoiceGrid
-                  label={f.label}
-                  options={f.options ?? []}
-                  value={answers.tipoDetalhes[f.key] ?? ""}
-                  onChange={(v) => setTipoDetalhe(f.key, v)}
+                  label={field.label}
+                  options={field.options ?? []}
+                  value={answers.tipoDetalhes[field.key] ?? ""}
+                  onChange={(value) => setTipoDetalhe(field.key, value)}
                 />
               </div>
             ) : (
               <TextField
-                key={f.key}
-                id={`td-${f.key}`}
-                label={f.label}
-                value={answers.tipoDetalhes[f.key] ?? ""}
-                onChange={(v) => setTipoDetalhe(f.key, v)}
+                key={field.key}
+                id={`td-${field.key}`}
+                label={field.label}
+                value={answers.tipoDetalhes[field.key] ?? ""}
+                onChange={(value) => setTipoDetalhe(field.key, value)}
                 optional
-                textarea={f.kind === "textarea"}
+                textarea={field.kind === "textarea"}
               />
             ),
           )}
@@ -926,8 +789,8 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             id="descricao"
             label="Conte-nos um pouco mais sobre a necessidade da sua empresa. Qual problema você deseja resolver ou qual resultado espera alcançar?"
             value={answers.descricao}
-            onChange={text("descricao")}
-            onBlur={blur("descricao")}
+            onChange={updateTextField("descricao")}
+            onBlur={handleBlur("descricao")}
             error={errors["descricao"]}
             textarea
             hint="Não inclua senhas, dados bancários ou documentos confidenciais."
@@ -944,7 +807,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
               label="Prazo"
               options={PRAZOS}
               value={answers.prazo}
-              onChange={(v) => set("prazo", v)}
+              onChange={(value) => setAnswer("prazo", value)}
             />
           </div>
         </div>
@@ -952,31 +815,49 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
       break;
 
     case "revisao": {
-      const rows: { title: string; screen: ScreenId; items: [string, string][] }[] = [
+      const rows: {
+        title: string;
+        screen: ScreenId;
+        extraActions?: { label: string; screen: ScreenId }[];
+        items: [string, string][];
+      }[] = [
         {
           title: "Responsável",
           screen: "responsavel",
           items: [
             ["Nome", answers.nome],
             ["Cargo/função", answers.cargo],
+            ["Empresa/organização", answers.organizacao],
+            ["CNPJ", answers.cnpj],
             ["Telefone", answers.telefone],
             ["WhatsApp", answers.whatsapp],
             ["E-mail", answers.email],
           ],
         },
         {
-          title: "Organização",
+          title: "Organização e localização",
           screen: "porte",
+          extraActions: [
+            { label: "Faturamento", screen: "faturamento" },
+            { label: publico ? "Natureza" : "Regime", screen: "regime" },
+            { label: "Localização", screen: "localizacao" },
+            { label: "Modalidade", screen: "modalidade" },
+          ],
           items: [
-            ["Empresa/organização", answers.organizacao],
-            ["CNPJ", answers.cnpj],
             ["Porte", answers.porte || "Não informado"],
             ["Faturamento bruto anual", answers.faturamento || "Não informado"],
             publico
               ? ["Natureza da entidade", answers.naturezaEntidade || "Não informada"]
               : ["Regime tributário", answers.regime || "Não informado"],
+            ...(publico && answers.necessidadeSetorPublico
+              ? ([["Necessidade no setor público", answers.necessidadeSetorPublico]] as [
+                  string,
+                  string,
+                ][])
+              : []),
             ["Localização", [answers.cidade.trim(), answers.estado].filter(Boolean).join("/")],
             ["Região de atendimento", answers.regiao],
+            ["Modalidade", answers.modalidade || "Não informada"],
           ],
         },
         {
@@ -991,41 +872,54 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
         {
           title: "Necessidade",
           screen: "servicos",
+          extraActions: [
+            { label: "Tipo", screen: "tipo" },
+            { label: "Detalhes do tipo", screen: "tipo-detalhes" },
+            { label: "Descrição e prazo", screen: "detalhamento" },
+          ],
           items: [
             ["Serviços", servicosResumo(answers).join(" | ") || "Não informado"],
             ["Necessidade integrada", answers.necessidadeIntegrada],
             ["Tipo de atendimento", answers.tipo],
-            ...tipoDetalhesResumo(answers).map((l): [string, string] => {
-              const i = l.indexOf(": ");
-              return [l.slice(0, i), l.slice(i + 2)];
-            }),
+            ...tipoDetalhesPairs(answers),
             ["Descrição", answers.descricao],
             ["Prazo", answers.prazo || "Não informado"],
-            ["Modalidade", answers.modalidade || "Não informada"],
           ],
         },
       ];
       body = (
         <div className="space-y-6">
-          {rows.map((r) => (
-            <section key={r.title} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="font-display text-lg font-semibold text-foreground">{r.title}</h3>
-                <button
-                  type="button"
-                  onClick={() => edit(r.screen)}
-                  className="rounded-md px-2 py-1 text-sm font-medium text-primary underline underline-offset-4 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Editar
-                </button>
+          {rows.map((row) => (
+            <section key={row.title} className="rounded-xl border border-border bg-card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-display text-lg font-semibold text-foreground">{row.title}</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => edit(row.screen)}
+                    className="rounded-md px-2 py-1 text-sm font-medium text-primary underline underline-offset-4 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    Editar
+                  </button>
+                  {row.extraActions?.map((action) => (
+                    <button
+                      key={action.screen}
+                      type="button"
+                      onClick={() => edit(action.screen)}
+                      className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground underline underline-offset-4 hover:bg-accent hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <dl className="mt-3 space-y-2 text-sm">
-                {r.items
-                  .filter(([, v]) => v && v.trim())
-                  .map(([k, v]) => (
-                    <div key={k} className="grid gap-1 sm:grid-cols-[11rem_1fr]">
-                      <dt className="text-muted-foreground">{k}</dt>
-                      <dd className="break-words text-foreground">{v}</dd>
+                {row.items
+                  .filter(([, val]) => val && val.trim())
+                  .map(([key, val]) => (
+                    <div key={key} className="grid gap-1 sm:grid-cols-[11rem_1fr]">
+                      <dt className="text-muted-foreground">{key}</dt>
+                      <dd className="break-words text-foreground">{val}</dd>
                     </div>
                   ))}
               </dl>
@@ -1055,8 +949,8 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
                 aria-invalid={!!errors["consentimentoPrivacidade"]}
                 aria-describedby={errors["consentimentoPrivacidade"] ? "consent-err" : undefined}
                 onChange={(e) => {
-                  set("consentimentoPrivacidade", e.target.checked);
-                  setErrors((p) => ({ ...p, consentimentoPrivacidade: undefined }));
+                  setAnswer("consentimentoPrivacidade", e.target.checked);
+                  setErrors((prev) => ({ ...prev, consentimentoPrivacidade: undefined }));
                 }}
               />
               <span>
@@ -1082,7 +976,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
                 type="checkbox"
                 className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--primary)]"
                 checked={answers.consentimentoMarketing}
-                onChange={(e) => set("consentimentoMarketing", e.target.checked)}
+                onChange={(e) => setAnswer("consentimentoMarketing", e.target.checked)}
               />
               <span>
                 <span className="text-muted-foreground">(opcional)</span> Aceito receber
@@ -1188,7 +1082,7 @@ export function Wizard({ initialService }: { initialService?: ServiceId | undefi
             <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                onClick={() => edit("responsavel")}
+                onClick={restartReviewFlow}
                 disabled={status === "sending"}
                 className="btn btn-outline"
               >

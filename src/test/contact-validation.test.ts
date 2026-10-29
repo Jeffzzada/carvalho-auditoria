@@ -45,4 +45,11 @@ describe("Validação do formulário de contato", () => {
     });
     expect(hasContactErrors(valid)).toBe(false);
   });
+
+  it("valida o campo opcional de contato como e-mail ou telefone com DDD", () => {
+    expect(validateContactField("contato", "")).toBeUndefined();
+    expect(validateContactField("contato", "ana@empresa.com.br")).toBeUndefined();
+    expect(validateContactField("contato", "(71) 98450-1050")).toBeUndefined();
+    expect(validateContactField("contato", "invalido")).toMatch(/e-mail ou telefone com DDD/i);
+  });
 });

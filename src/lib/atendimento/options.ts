@@ -126,8 +126,6 @@ export const ORIGENS = [
 export const ORIGENS_INDICACAO: readonly string[] = [ORIGENS[0], ORIGENS[1]];
 export const ORIGEM_OUTRO = "Outro";
 
-export const SERVICO_INDEFINIDO = "indefinido" as const;
-
 export const SUBOPCOES: Record<ServiceId, readonly string[]> = {
   ti: [
     "Segurança da informação",
@@ -189,3 +187,95 @@ export const PRAZOS = [
   "Sem prazo definido",
   "Apenas obter informações",
 ] as const;
+
+export type TipoField = {
+  key: string;
+  label: string;
+  summaryLabel: string;
+  kind: "textarea" | "text" | "choice";
+  options?: readonly string[];
+};
+
+export const TIPO_FIELDS: Record<string, readonly TipoField[]> = {
+  "Consultoria ou orientação técnica": [
+    {
+      key: "duvida",
+      label: "Qual dúvida, problema ou decisão precisa de apoio?",
+      summaryLabel: "Dúvida, problema ou decisão",
+      kind: "textarea",
+    },
+  ],
+  "Contratação de serviço": [
+    {
+      key: "objetivo",
+      label: "Qual o objetivo da contratação?",
+      summaryLabel: "Objetivo",
+      kind: "textarea",
+    },
+    {
+      key: "escopo",
+      label: "Qual o escopo pretendido?",
+      summaryLabel: "Escopo pretendido",
+      kind: "textarea",
+    },
+    {
+      key: "docPrevia",
+      label: "Há documentação ou definição prévia?",
+      summaryLabel: "Documentação ou definição prévia",
+      kind: "choice",
+      options: SIM_NAO,
+    },
+  ],
+  "Diagnóstico inicial": [
+    {
+      key: "riscos",
+      label: "Quais os principais riscos, dificuldades ou processos a avaliar?",
+      summaryLabel: "Principais riscos, dificuldades ou processos",
+      kind: "textarea",
+    },
+  ],
+  "Esclarecimento de dúvidas": [
+    {
+      key: "duvida",
+      label: "Descreva a sua dúvida",
+      summaryLabel: "Dúvida, problema ou decisão",
+      kind: "textarea",
+    },
+    {
+      key: "area",
+      label: "Qual área está relacionada?",
+      summaryLabel: "Área relacionada",
+      kind: "choice",
+      options: AREAS_DUVIDA,
+    },
+  ],
+  "Solicitação de proposta comercial": [
+    {
+      key: "escopoDefinido",
+      label: "O escopo já está definido?",
+      summaryLabel: "Escopo definido",
+      kind: "choice",
+      options: SIM_NAO,
+    },
+    {
+      key: "prazoDesejado",
+      label: "Qual o prazo desejado?",
+      summaryLabel: "Prazo desejado",
+      kind: "text",
+    },
+    {
+      key: "condicoes",
+      label: "Há condições relevantes a considerar?",
+      summaryLabel: "Condições relevantes",
+      kind: "textarea",
+    },
+  ],
+  Outro: [
+    {
+      key: "outroDescricao",
+      label: "Descreva o tipo de atendimento que você procura",
+      summaryLabel: "Detalhe",
+      kind: "textarea",
+    },
+  ],
+};

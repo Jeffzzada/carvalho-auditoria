@@ -37,7 +37,7 @@ const items: { title: string; body: string[] }[] = [
   {
     title: "Mensagens pelo WhatsApp",
     body: [
-      "Quando você opta por falar pelo WhatsApp, a mensagem pré-preenchida contém apenas um resumo não sensível (nome, serviço de interesse e tipo de atendimento). O tratamento posterior segue as regras do próprio WhatsApp.",
+      "Quando você opta por falar pelo WhatsApp a partir do assistente de Atendimento, a mensagem pré-preenchida contém apenas um resumo não sensível (nome, serviço de interesse e tipo de atendimento). Caso utilize o formulário rápido da página de Contato, o texto preenchido por você é preparado diretamente para envio na conversa do WhatsApp, sem armazenamento prévio no site. O tratamento posterior na plataforma segue as regras do próprio WhatsApp.",
     ],
   },
   {

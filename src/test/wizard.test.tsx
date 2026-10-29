@@ -188,4 +188,15 @@ describe("Assistente de Atendimento", () => {
     ).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("permite editar localização diretamente a partir da revisão e voltar à revisão", async () => {
+    await renderWizard();
+    await goToReview("Médio Porte");
+    click("Localização");
+    await screen.findByLabelText(/Cidade/);
+    type(/Cidade/, "Feira de Santana");
+    click(/Salvar e voltar à revisão/);
+    await screen.findByText("Revise e envie sua solicitação");
+    expect(screen.getByText("Feira de Santana/BA")).toBeTruthy();
+  });
 });

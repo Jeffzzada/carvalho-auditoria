@@ -1,6 +1,7 @@
-import { getService } from "@/lib/content";
+import { getService, type ServiceId } from "@/lib/content";
+import { ORIGEM_OUTRO, SUBOPCOES, TIPO_FIELDS } from "@/lib/atendimento/options";
 import { buildTeamSummary, suggestArea } from "@/lib/atendimento/summary";
-import { hasErrors, validateAll } from "@/lib/atendimento/validation";
+import { hasErrors, isIndicacao, isPublico, validateAll } from "@/lib/atendimento/validation";
 import { emptyAnswers, type Answers } from "@/lib/atendimento/types";
 
 /**
@@ -16,47 +17,203 @@ import { emptyAnswers, type Answers } from "@/lib/atendimento/types";
 
 export type SubmitResult =
   | { status: 200; body: { ok: true; notified: boolean } }
-  | { status: 400 | 413 | 500 | 502 | 503; body: { ok: false; error: string } };
+  | { status: 400 | 403 | 413 | 429 | 500 | 502 | 503; body: { ok: false; error: string } };
 
 const MAX_BODY_BYTES = 40_000;
-const env = (k: string) =>
-  (typeof process !== "undefined" ? process.env[k] : undefined)?.trim() || undefined;
+const MAX_STRING_LEN = 2000;
+const MAX_ARRAY_ITEM_LEN = 200;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 10;
 
-function pick<T extends object>(input: unknown, base: T): T {
-  const out = { ...base } as Record<string, unknown>;
-  if (!input || typeof input !== "object") return base;
-  const src = input as Record<string, unknown>;
-  for (const key of Object.keys(base)) {
-    const v = src[key];
-    const b = (base as Record<string, unknown>)[key];
-    if (typeof b === "string" && typeof v === "string") out[key] = v.slice(0, 2000);
-    else if (typeof b === "boolean" && typeof v === "boolean") out[key] = v;
-    else if (Array.isArray(b) && Array.isArray(v))
-      out[key] = v.filter((x) => typeof x === "string").slice(0, 20);
-    else if (b && typeof b === "object" && !Array.isArray(b) && v && typeof v === "object") {
-      const rec: Record<string, unknown> = {};
-      for (const [k2, v2] of Object.entries(v as Record<string, unknown>).slice(0, 20)) {
-        if (typeof v2 === "string") rec[k2.slice(0, 40)] = v2.slice(0, 2000);
-        else if (Array.isArray(v2))
-          rec[k2.slice(0, 40)] = v2.filter((x) => typeof x === "string").slice(0, 20);
-      }
-      out[key] = rec;
+const ipBuckets = new Map<string, number[]>();
+
+export function resetAtendimentoRateLimit() {
+  ipBuckets.clear();
+}
+
+function checkRateLimit(request: Request): boolean {
+  const forwarded =
+    request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for");
+  const ip = forwarded?.split(",")[0]?.trim();
+  if (!ip) return true;
+  const now = Date.now();
+  const recent = (ipBuckets.get(ip) ?? []).filter(
+    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS,
+  );
+  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
+    ipBuckets.set(ip, recent);
+    return false;
+  }
+  recent.push(now);
+  ipBuckets.set(ip, recent);
+  return true;
+}
+
+function isSameOriginRequest(request: Request): boolean {
+  const secFetchSite = request.headers.get("sec-fetch-site");
+  if (secFetchSite && secFetchSite === "cross-site") return false;
+  const origin = request.headers.get("origin");
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      const requestUrl = new URL(request.url);
+      if (originUrl.host !== requestUrl.host) return false;
+    } catch {
+      return false;
     }
   }
-  return out as T;
+  return true;
+}
+
+async function readBoundedText(request: Request, maxBytes: number): Promise<string | null> {
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) return null;
+
+  if (!request.body) {
+    const text = await request.text();
+    return new TextEncoder().encode(text).byteLength > maxBytes ? null : text;
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        totalBytes += value.byteLength;
+        if (totalBytes > maxBytes) {
+          await reader.cancel().catch(() => undefined);
+          return null;
+        }
+        chunks.push(value);
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const merged = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(merged);
+}
+
+const env = (key: string) =>
+  (typeof process !== "undefined" ? process.env[key] : undefined)?.trim() || undefined;
+
+function pick<T extends object>(input: unknown, base: T): T {
+  const output = { ...base } as Record<string, unknown>;
+  if (!input || typeof input !== "object") return base;
+  const source = input as Record<string, unknown>;
+  for (const key of Object.keys(base)) {
+    const rawValue = source[key];
+    const defaultValue = (base as Record<string, unknown>)[key];
+    if (typeof defaultValue === "string" && typeof rawValue === "string") {
+      output[key] = rawValue.slice(0, MAX_STRING_LEN);
+    } else if (typeof defaultValue === "boolean" && typeof rawValue === "boolean") {
+      output[key] = rawValue;
+    } else if (Array.isArray(defaultValue) && Array.isArray(rawValue)) {
+      output[key] = rawValue
+        .filter((item): item is string => typeof item === "string")
+        .slice(0, 20)
+        .map((item) => item.slice(0, MAX_ARRAY_ITEM_LEN));
+    } else if (
+      defaultValue &&
+      typeof defaultValue === "object" &&
+      !Array.isArray(defaultValue) &&
+      rawValue &&
+      typeof rawValue === "object"
+    ) {
+      const sanitizedRecord: Record<string, unknown> = {};
+      for (const [entryKey, entryValue] of Object.entries(
+        rawValue as Record<string, unknown>,
+      ).slice(0, 20)) {
+        const safeKey = entryKey.slice(0, 40);
+        if (typeof entryValue === "string") {
+          sanitizedRecord[safeKey] = entryValue.slice(0, MAX_STRING_LEN);
+        } else if (Array.isArray(entryValue)) {
+          sanitizedRecord[safeKey] = entryValue
+            .filter((item): item is string => typeof item === "string")
+            .slice(0, 20)
+            .map((item) => item.slice(0, MAX_ARRAY_ITEM_LEN));
+        }
+      }
+      output[key] = sanitizedRecord;
+    }
+  }
+  return output as T;
 }
 
 function sanitize(raw: unknown): Answers {
-  const a = pick(raw, emptyAnswers);
-  a.servicos = a.servicos.filter((id) => getService(id));
-  return a;
+  const sanitized = pick(raw, emptyAnswers);
+  sanitized.servicos = sanitized.servicos.filter((id): id is ServiceId => Boolean(getService(id)));
+  if (sanitized.servicoIndefinido) {
+    sanitized.servicos = [];
+  }
+
+  const validSubopcoes: Partial<Record<ServiceId, string[]>> = {};
+  const validSubopcaoOutra: Partial<Record<ServiceId, string>> = {};
+  for (const serviceId of sanitized.servicos) {
+    const allowedOptions = SUBOPCOES[serviceId] ?? [];
+    const selectedOptions = (sanitized.subopcoes[serviceId] ?? []).filter((opt) =>
+      allowedOptions.includes(opt),
+    );
+    if (selectedOptions.length > 0) {
+      validSubopcoes[serviceId] = selectedOptions;
+    }
+    if (selectedOptions.includes("Outra") && sanitized.subopcaoOutra[serviceId]) {
+      validSubopcaoOutra[serviceId] = sanitized.subopcaoOutra[serviceId]!.slice(0, 200);
+    }
+  }
+  sanitized.subopcoes = validSubopcoes;
+  sanitized.subopcaoOutra = validSubopcaoOutra;
+
+  if (sanitized.servicos.length <= 1) {
+    sanitized.necessidadeIntegrada = "";
+  }
+
+  const allowedTipoKeys = new Set((TIPO_FIELDS[sanitized.tipo] ?? []).map((field) => field.key));
+  const validTipoDetalhes: Record<string, string> = {};
+  for (const [key, val] of Object.entries(sanitized.tipoDetalhes)) {
+    if (allowedTipoKeys.has(key) && typeof val === "string") {
+      validTipoDetalhes[key] = val;
+    }
+  }
+  sanitized.tipoDetalhes = validTipoDetalhes;
+
+  if (isPublico(sanitized.porte)) {
+    sanitized.regime = "";
+  } else {
+    sanitized.naturezaEntidade = "";
+    sanitized.necessidadeSetorPublico = "";
+  }
+
+  if (sanitized.origem !== ORIGEM_OUTRO) {
+    sanitized.origemDetalhe = "";
+  }
+  if (!isIndicacao(sanitized.origem)) {
+    sanitized.indicadoPor = "";
+  }
+
+  return sanitized;
 }
 
-async function notify(summary: string, a: Answers, area: string): Promise<boolean> {
+const stripCrLf = (value: string) => value.replace(/[\r\n]+/g, " ").trim();
+
+async function notify(summary: string, answers: Answers, area: string): Promise<boolean> {
   const key = env("RESEND_API_KEY");
   const to = env("NOTIFY_EMAIL_TO");
   const from = env("NOTIFY_EMAIL_FROM");
   if (!key || !to || !from) return false;
+  const safeOrg = stripCrLf(answers.organizacao).slice(0, 120);
+  const safeArea = stripCrLf(area).slice(0, 120);
+  const safeReplyTo = stripCrLf(answers.email);
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -65,10 +222,10 @@ async function notify(summary: string, a: Answers, area: string): Promise<boolea
         from,
         to: to
           .split(",")
-          .map((s) => s.trim())
+          .map((recipient) => recipient.trim())
           .filter(Boolean),
-        reply_to: a.email,
-        subject: `Nova solicitação de atendimento: ${a.organizacao.trim()} (${area})`,
+        reply_to: safeReplyTo,
+        subject: `Nova solicitação de atendimento: ${safeOrg} (${safeArea})`,
         text: summary,
       }),
     });
@@ -82,6 +239,14 @@ async function notify(summary: string, a: Answers, area: string): Promise<boolea
 }
 
 export async function handleAtendimentoSubmission(request: Request): Promise<SubmitResult> {
+  if (!isSameOriginRequest(request)) {
+    return { status: 403, body: { ok: false, error: "origem_invalida" } };
+  }
+
+  if (!checkRateLimit(request)) {
+    return { status: 429, body: { ok: false, error: "muitas_tentativas" } };
+  }
+
   const supabaseUrl = env("SUPABASE_URL");
   const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) {
@@ -89,9 +254,10 @@ export async function handleAtendimentoSubmission(request: Request): Promise<Sub
     return { status: 503, body: { ok: false, error: "nao_configurado" } };
   }
 
-  const text = await request.text();
-  if (text.length > MAX_BODY_BYTES)
+  const text = await readBoundedText(request, MAX_BODY_BYTES);
+  if (text === null) {
     return { status: 413, body: { ok: false, error: "muito_grande" } };
+  }
 
   let json: unknown;
   try {
